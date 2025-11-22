@@ -39,7 +39,8 @@ export class AppComponent {
     effect(() => {
         const event = this.routerEvents();
         if (event) {
-            const url = event.urlAfterRedirects;
+            // FIX: Cast `event` to `NavigationEnd` to access `urlAfterRedirects` property.
+            const url = (event as NavigationEnd).urlAfterRedirects;
             const isAdminPanel = this.domainService.isAdminPanel();
 
             // If on admin domain but not on an admin-related page, force to admin.

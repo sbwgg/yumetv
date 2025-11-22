@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, UrlSegment } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { MovieService } from '../../services/movie.service';
@@ -22,7 +22,8 @@ export class PlayerComponent {
   private movieService = inject(MovieService);
 
   private params = toSignal(this.route.params);
-  private url = toSignal(this.route.url.pipe(map(segments => segments.map(s => s.path).join('/'))));
+  // FIX: Add explicit type for `segments` to resolve `map` property error.
+  private url = toSignal(this.route.url.pipe(map((segments: UrlSegment[]) => segments.map(s => s.path).join('/'))));
 
   media = computed<Media | undefined>(() => {
     const mediaId = this.params()?.['id'];
@@ -47,11 +48,13 @@ export class PlayerComponent {
 
     if (!currentUrl || !currentParams || !currentMedia) return null;
 
-    if (currentUrl.startsWith('watch/movie') && currentMedia.type === 'Movie') {
+    // FIX: Cast `currentUrl` to string to access `startsWith` method.
+    if ((currentUrl as string).startsWith('watch/movie') && currentMedia.type === 'Movie') {
       return currentMedia.sourceUrl || null;
     }
 
-    if (currentUrl.startsWith('watch/tv') && currentMedia.type === 'TV Show') {
+    // FIX: Cast `currentUrl` to string to access `startsWith` method.
+    if ((currentUrl as string).startsWith('watch/tv') && currentMedia.type === 'TV Show') {
       const seasonNum = this.seasonNumber();
       const episodeNum = this.episodeNumber();
       if (!seasonNum || !episodeNum) return null;

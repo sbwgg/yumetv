@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -71,7 +72,7 @@ export class HomeComponent {
     // Get the most recent watch entry for each unique media ID
     const latestWatchedByMediaId = new Map<number, WatchedItem>();
     [...user.recentlyWatched]
-      // FIX: Call getTime() directly on the Date object to resolve the arithmetic operation error.
+      // FIX: Use .getTime() to convert Date objects to numbers for correct sorting. Direct subtraction of Date objects is not allowed.
       .sort((a: WatchedItem, b: WatchedItem) => b.watchedAt.getTime() - a.watchedAt.getTime())
       .forEach(item => {
         if (!latestWatchedByMediaId.has(item.mediaId)) {
@@ -90,4 +91,12 @@ export class HomeComponent {
     // Sort the final list by date to maintain the carousel order
     return result.sort((a, b) => new Date(b.watchedItem.watchedAt).getTime() - new Date(a.watchedItem.watchedAt).getTime());
   });
+
+  clearFilters() {
+    this.selectedGenre.set('');
+    this.selectedYear.set(null);
+    this.selectedAudioLang.set('');
+    this.selectedSubtitleLang.set('');
+    this.selectedType.set('');
+  }
 }

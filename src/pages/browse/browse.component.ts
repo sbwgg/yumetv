@@ -53,4 +53,13 @@ export class BrowseComponent {
     // FIX: Explicitly type 'a' and 'b' as numbers to ensure correct type for subtraction.
     return Array.from(new Set(allYears)).sort((a: number, b: number) => b - a);
   });
+
+  clearFilters() {
+    this.searchTerm.set('');
+    this.selectedType.set('');
+    this.selectedGenre.set('');
+    this.selectedYear.set(null);
+    this.selectedAudioLang.set('');
+    this.selectedSubtitleLang.set('');
+  }
 }

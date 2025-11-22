@@ -1,10 +1,9 @@
-
 <div class="container mx-auto px-4 py-8 space-y-12">
   
   <!-- Search and Filter Section -->
   <div class="bg-surface/50 p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-bold mb-4">{{ 'advancedSearch' | translate }}</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       <select [ngModel]="selectedGenre()" (ngModelChange)="selectedGenre.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
         <option value="">{{ 'allGenres' | translate }}</option>
         @for (genre of genres; track genre) {
@@ -14,6 +13,12 @@
       <select [ngModel]="selectedAudioLang()" (ngModelChange)="selectedAudioLang.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
         <option value="">{{ 'allAudio' | translate }}</option>
         @for (lang of audioLanguages; track lang) {
+          <option [value]="lang">{{ lang }}</option>
+        }
+      </select>
+       <select [ngModel]="selectedSubtitleLang()" (ngModelChange)="selectedSubtitleLang.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
+        <option value="">{{ 'allSubtitles' | translate }}</option>
+        @for (lang of subtitleLanguages; track lang) {
           <option [value]="lang">{{ lang }}</option>
         }
       </select>
@@ -28,7 +33,7 @@
           <option [value]="year">{{ year }}</option>
         }
       </select>
-       <button class="bg-surface-light/50 border border-border text-text-primary p-3 rounded-md hover:bg-surface-light transition-colors duration-200">
+       <button (click)="clearFilters()" class="bg-surface-light/50 border border-border text-text-primary p-3 rounded-md hover:bg-surface-light transition-colors duration-200">
         {{ 'clearFilters' | translate }}
       </button>
     </div>

@@ -1,4 +1,5 @@
 
+
 import { Injectable, signal, effect } from '@angular/core';
 import { Media, Comment, Rating } from '../shared/models/movie.model';
 
@@ -36,19 +37,19 @@ export class MovieService {
   }
 
   getGenres(): string[] {
-    // FIX: Use flatMap() to correctly flatten the array of genres and ensure proper type inference.
+    // FIX: Use flatMap to correctly flatten the array of genres. Using map would create a nested array (string[][]), causing a type error.
     const allGenres = this.media().flatMap(m => m.genre || []);
     return [...new Set(allGenres)].sort();
   }
 
   getAudioLanguages(): string[] {
-    // FIX: Use flatMap() to correctly flatten the array of languages and ensure proper type inference.
+    // FIX: Use flatMap to correctly flatten the array of languages. Using map would create a nested array (string[][]), causing a type error.
     const allLanguages = this.media().flatMap(m => m.audioLanguages || []);
     return [...new Set(allLanguages)].sort();
   }
   
   getSubtitleLanguages(): string[] {
-    // FIX: Use flatMap() to correctly flatten the array of languages and ensure proper type inference.
+    // FIX: Use flatMap to correctly flatten the array of languages. Using map would create a nested array (string[][]), causing a type error.
     const allLanguages = this.media().flatMap(m => m.subtitleLanguages || []);
     return [...new Set(allLanguages)].sort();
   }

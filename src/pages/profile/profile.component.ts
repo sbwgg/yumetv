@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule, TitleCasePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -41,7 +40,8 @@ export class ProfileComponent {
   
   user = computed(() => {
     const id = this.userId();
-    return id ? this.authService.getUserById(id) : undefined;
+    // FIX: Cast `id` to number as `getUserById` expects a number and `userId()` may be inferred as unknown.
+    return id ? this.authService.getUserById(id as number) : undefined;
   });
 
   recentlyWatchedMedia = computed(() => {
