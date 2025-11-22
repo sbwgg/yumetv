@@ -1,0 +1,40 @@
+
+
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { TranslatePipe } from '../../pipes/translate.pipe';
+
+@Component({
+  selector: 'app-register',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
+  templateUrl: './register.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class RegisterComponent {
+  authService = inject(AuthService);
+  router: Router = inject(Router);
+
+  username = '';
+  email = '';
+  password = '';
+  errorMessage = signal<string | null>(null);
+  successMessage = signal<string | null>(null);
+
+  onRegister() {
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    const result = this.authService.register(this.username, this.email, this.password);
+    
+    if (result.success) {
+      this.successMessage.set(result.message!);
+      const timeout = result.message.includes('admin') ? 4000 : 2000;
+      setTimeout(() => this.router.navigate(['/login']), timeout);
+    } else {
+      this.errorMessage.set(result.message!);
+    }
+  }
+}

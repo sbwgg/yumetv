@@ -1,0 +1,125 @@
+
+<div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-0 sm:p-4 animate-fade-in" (click)="close()">
+  <div 
+    class="shadow-2xl w-full bg-surface rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto"
+    (click)="$event.stopPropagation()">
+      <div class="relative">
+        <img [src]="media().thumbnailUrl || media().posterUrl.replace('400/600', '800/400')" [alt]="media().title" class="w-full h-96 object-cover rounded-t-lg">
+        <div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+        <button (click)="close()" class="absolute top-4 right-4 bg-background/70 rounded-full p-2 hover:bg-background/100 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-text-primary">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="absolute bottom-0 left-0 p-8">
+            <h1 class="text-5xl font-bold text-text-primary shadow-lg">{{ media().title }}</h1>
+        </div>
+      </div>
+      
+      <div class="p-8">
+        <div class="flex items-center space-x-4 mb-4">
+          <span class="text-text-secondary">{{ media().releaseYear }}</span>
+          <span class="border-l border-border h-4"></span>
+          <span class="text-text-secondary">{{ media().type }}</span>
+        </div>
+        <p class="text-text-secondary mb-6">{{ media().description }}</p>
+
+        <div class="flex flex-wrap gap-2 mb-6">
+          @for(genre of media().genre; track genre) {
+            <span class="bg-surface-light text-text-secondary px-3 py-1 rounded-full text-sm">{{ genre }}</span>
+          }
+        </div>
+        
+        @if (media().type === 'Movie') {
+          <a [routerLink]="['/watch', 'movie', media().id]" (click)="close()" class="w-full bg-primary text-white py-3 px-6 rounded-lg text-lg font-bold flex items-center justify-center space-x-2 hover:bg-blue-600 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+              <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+            </svg>
+            <span>{{ 'play' | translate }}</span>
+          </a>
+        }
+
+        @if (media().type === 'TV Show' && media().seasons && media().seasons!.length > 0) {
+          <div class="mb-6">
+            <h3 class="text-xl font-bold mb-3 text-text-primary">{{ 'seasons' | translate }}</h3>
+            <div class="flex items-center border-b border-border">
+              @for (season of media().seasons; track season.seasonNumber; let i = $index) {
+                <button 
+                  (click)="selectedSeasonIndex.set(i)"
+                  class="px-4 py-2 font-semibold transition"
+                  [class.text-primary]="selectedSeasonIndex() === i"
+                  [class.border-b-2]="selectedSeasonIndex() === i"
+                  [class.border-primary]="selectedSeasonIndex() === i"
+                  [class.text-text-secondary]="selectedSeasonIndex() !== i">
+                  {{ 'season' | translate }} {{ season.seasonNumber }}
+                </button>
+              }
+            </div>
+            <div class="mt-4 space-y-3 max-h-72 overflow-y-auto">
+              @for (episode of media().seasons![selectedSeasonIndex()].episodes; track episode.episodeNumber) {
+                <div class="flex items-center p-2 rounded-lg hover:bg-surface-light/50 transition-colors">
+                  <img [src]="episode.thumbnailUrl" [alt]="episode.title" class="w-32 h-20 object-cover rounded-md mr-4">
+                  <div class="flex-grow">
+                    <p class="font-bold text-text-primary">{{ episode.episodeNumber }}. {{ episode.title }}</p>
+                  </div>
+                  <a [routerLink]="['/watch', 'tv', media().id, 's', media().seasons![selectedSeasonIndex()].seasonNumber, 'e', episode.episodeNumber]" (click)="close()" class="bg-surface-light p-2 rounded-full hover:bg-primary transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                      <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                    </svg>
+                  </a>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Comments Section -->
+        <div class="mt-8">
+          <h3 class="text-2xl font-bold mb-4 text-text-primary">{{ 'comments' | translate }}</h3>
+          @if(authService.currentUser()) {
+            <form (ngSubmit)="addComment()" class="flex space-x-2 mb-6">
+              <input type="text" [(ngModel)]="newComment" name="comment" placeholder="{{ 'addCommentPlaceholder' | translate }}" class="flex-grow p-3 bg-surface-light border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
+              <button type="submit" class="bg-primary text-white px-6 py-3 rounded-md font-bold hover:bg-blue-600 transition">{{ 'postComment' | translate }}</button>
+            </form>
+          } @else {
+            <p class="text-text-secondary mb-6">{{ 'mustBeLoggedInToComment' | translate }}</p>
+          }
+
+          <div class="space-y-4 max-h-64 overflow-y-auto pr-2">
+            @for (comment of media().comments; track comment.timestamp) {
+              <div class="bg-surface-light p-4 rounded-lg">
+                @if (editingCommentTimestamp()?.getTime() === comment.timestamp.getTime()) {
+                  <div class="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      [ngModel]="editingCommentText()"
+                      (ngModelChange)="editingCommentText.set($event)"
+                      class="flex-grow p-2 bg-surface rounded-md text-text-primary border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                      (keydown.enter)="saveCommentEdit()"
+                      (keydown.escape)="cancelEdit()">
+                    <button (click)="saveCommentEdit()" class="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700">{{ 'save' | translate }}</button>
+                    <button (click)="cancelEdit()" class="bg-border text-white px-3 py-1 rounded-md text-sm hover:bg-surface-light">{{ 'cancel' | translate }}</button>
+                  </div>
+                } @else {
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <p class="font-bold text-text-primary">{{ comment.username }}</p>
+                      <p class="text-text-secondary whitespace-pre-wrap">{{ comment.text }}</p>
+                    </div>
+                    @if(isAdminOrMod()) {
+                      <div class="flex items-center gap-2 flex-shrink-0 ml-4">
+                        <button (click)="startEditComment(comment)" class="text-blue-400 hover:text-blue-300 text-xs font-semibold">{{ 'edit' | translate }}</button>
+                        <button (click)="deleteComment(comment.timestamp)" class="text-red-400 hover:text-red-300 text-xs font-semibold">{{ 'delete' | translate }}</button>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @empty {
+              <p class="text-text-secondary">{{ 'noCommentsYet' | translate }}</p>
+            }
+          </div>
+        </div>
+      </div>
+  </div>
+</div>

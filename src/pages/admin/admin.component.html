@@ -1,0 +1,302 @@
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-surface p-6 text-text-primary">
+    <h2 class="text-2xl font-bold mb-8 text-primary">{{ 'adminPanel' | translate }}</h2>
+    <nav class="space-y-4">
+      <button (click)="activeTab.set('dashboard')" [class]="activeTab() === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'dashboard' | translate }}</button>
+      <button (click)="activeTab.set('users')" [class]="activeTab() === 'users' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'userManagement' | translate }}</button>
+      <button (click)="activeTab.set('content')" [class]="activeTab() === 'content' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'contentManagement' | translate }}</button>
+      <button (click)="activeTab.set('settings')" [class]="activeTab() === 'settings' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'siteSettings' | translate }}</button>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-10 bg-background">
+    @switch (activeTab()) {
+      @case ('dashboard') {
+        <div class="animate-fade-in">
+          <h1 class="text-4xl font-bold mb-8">{{ 'dashboard' | translate }}</h1>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-surface p-6 rounded-lg shadow-lg text-center">
+              <h3 class="text-2xl font-semibold">{{ users().length }}</h3>
+              <p class="text-text-secondary">{{ 'totalUsers' | translate }}</p>
+            </div>
+            <div class="bg-surface p-6 rounded-lg shadow-lg text-center">
+              <h3 class="text-2xl font-semibold">{{ movieService.media().length }}</h3>
+              <p class="text-text-secondary">{{ 'totalMediaItems' | translate }}</p>
+            </div>
+             <div class="bg-surface p-6 rounded-lg shadow-lg text-center">
+              <h3 class="text-2xl font-semibold">{{ settingsService.settings().maintenanceMode.enabled ? ('on' | translate) : ('off' | translate) }}</h3>
+              <p class="text-text-secondary">{{ 'maintenanceMode' | translate }}</p>
+            </div>
+          </div>
+        </div>
+      }
+      @case ('users') {
+        <div class="animate-fade-in">
+          <h1 class="text-4xl font-bold mb-8">{{ 'userManagement' | translate }}</h1>
+          <div class="bg-surface rounded-lg shadow-lg overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-surface-light">
+                <tr>
+                  <th class="p-4">{{ 'username' | translate }}</th>
+                  <th class="p-4">{{ 'email' | translate }}</th>
+                  <th class="p-4">{{ 'role' | translate }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (user of users(); track user.id) {
+                  <tr class="border-b border-border last:border-b-0">
+                    <td class="p-4">{{ user.username }}</td>
+                    <td class="p-4">{{ user.email }}</td>
+                    <td class="p-4">
+                      <select [ngModel]="user.role" (change)="updateUserRole(user, $event)" class="bg-border p-2 rounded-md">
+                        <option value="user">{{ 'roleUser' | translate }}</option>
+                        <option value="mod">{{ 'roleMod' | translate }}</option>
+                        <option value="admin">{{ 'roleAdmin' | translate }}</option>
+                      </select>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+      @case ('content') {
+        <div class="animate-fade-in">
+          <h1 class="text-4xl font-bold mb-8">{{ 'contentManagement' | translate }}</h1>
+          
+          <section class="mb-10" #editFormSection>
+            <h2 class="text-2xl font-semibold mb-4">{{ (editingMediaId() ? 'editMedia' : 'addNewMedia') | translate }}</h2>
+            <form (ngSubmit)="saveMedia()" class="bg-surface p-8 rounded-lg shadow-lg max-w-4xl mx-auto space-y-4">
+              <input type="text" [(ngModel)]="newMedia.title" name="title" placeholder="{{ 'title' | translate }}" required class="w-full p-3 bg-surface-light rounded-md border border-border">
+              <textarea [(ngModel)]="newMedia.description" name="description" placeholder="{{ 'description' | translate }}" required rows="4" class="w-full p-3 bg-surface-light rounded-md border border-border"></textarea>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-text-secondary mb-2">{{ 'posterImage' | translate }}</label>
+                  <div class="flex items-center gap-4">
+                    <img [src]="newMedia.posterUrl" alt="Poster Preview" class="w-20 aspect-[4/5] object-cover rounded bg-surface-light border border-border">
+                    <input type="file" (change)="onFileSelected($event, 'poster')" accept="image/*" class="block w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-600">
+                  </div>
+                </div>
+                 <div>
+                  <label class="block text-text-secondary mb-2">{{ 'thumbnailImage' | translate }}</label>
+                  <div class="flex items-center gap-4">
+                    <img [src]="newMedia.thumbnailUrl" alt="Thumbnail Preview" class="w-32 aspect-video object-cover rounded bg-surface-light border border-border">
+                    <input type="file" (change)="onFileSelected($event, 'thumbnail')" accept="image/*" class="block w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-600">
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="number" [(ngModel)]="newMedia.releaseYear" name="year" placeholder="{{ 'releaseYear' | translate }}" required class="w-full p-3 bg-surface-light rounded-md border border-border">
+                <select [(ngModel)]="newMedia.type" name="type" class="w-full p-3 bg-surface-light rounded-md border border-border">
+                  <option value="Movie">{{ 'movie' | translate }}</option>
+                  <option value="TV Show">{{ 'tvShow' | translate }}</option>
+                </select>
+                <select [(ngModel)]="newMedia.ageRating" name="ageRating" class="w-full p-3 bg-surface-light rounded-md border border-border">
+                    <option value="G">G (General)</option>
+                    <option value="PG">PG</option>
+                    <option value="PG-13">PG-13</option>
+                    <option value="R">R</option>
+                    <option value="NC-17">NC-17</option>
+                    <option value="TV-Y">TV-Y</option>
+                    <option value="TV-G">TV-G</option>
+                    <option value="TV-PG">TV-PG</option>
+                    <option value="TV-14">TV-14</option>
+                    <option value="TV-MA">TV-MA</option>
+                </select>
+              </div>
+              <input type="text" [(ngModel)]="newMedia.genre" name="genre" placeholder="{{ 'genresPlaceholder' | translate }}" class="w-full p-3 bg-surface-light rounded-md border border-border">
+              <input type="text" [(ngModel)]="newMedia.tags" name="tags" placeholder="{{ 'tagsPlaceholder' | translate }}" class="w-full p-3 bg-surface-light rounded-md border border-border">
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Custom Multi-select for Audio Languages -->
+                <div class="relative">
+                  <label class="block text-text-secondary mb-2">{{ 'audioLanguages' | translate }}</label>
+                  <div (click)="showAudioLangDropdown.set(!showAudioLangDropdown())" class="w-full p-2 bg-surface-light rounded-md cursor-pointer min-h-[48px] flex flex-wrap gap-2 items-center border border-border">
+                    @if (newMedia.audioLanguages.length === 0) {
+                      <span class="text-text-secondary px-1">{{ 'selectLanguages' | translate }}...</span>
+                    }
+                    @for(lang of newMedia.audioLanguages; track lang) {
+                      <span class="bg-primary text-white px-2 py-1 rounded-full text-sm flex items-center gap-1.5">
+                        {{ lang }}
+                        <button type="button" (click)="$event.stopPropagation(); toggleLanguage(lang, 'audio')" class="font-bold leading-none hover:text-slate-200 text-md">&times;</button>
+                      </span>
+                    }
+                  </div>
+                  @if(showAudioLangDropdown()) {
+                    <div class="absolute z-10 w-full bg-border mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto border border-surface-light">
+                      @for(lang of availableLanguages; track lang) {
+                        <label class="flex items-center px-4 py-2 hover:bg-surface-light/50 cursor-pointer">
+                          <input type="checkbox" [checked]="newMedia.audioLanguages.includes(lang)" (change)="toggleLanguage(lang, 'audio')" class="h-4 w-4 rounded border-border bg-surface-light text-primary focus:ring-primary mr-3">
+                          {{ lang }}
+                        </label>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Custom Multi-select for Subtitle Languages -->
+                 <div class="relative">
+                  <label class="block text-text-secondary mb-2">{{ 'subtitleLanguages' | translate }}</label>
+                  <div (click)="showSubtitleLangDropdown.set(!showSubtitleLangDropdown())" class="w-full p-2 bg-surface-light rounded-md cursor-pointer min-h-[48px] flex flex-wrap gap-2 items-center border border-border">
+                    @if (newMedia.subtitleLanguages.length === 0) {
+                      <span class="text-text-secondary px-1">{{ 'selectLanguages' | translate }}...</span>
+                    }
+                    @for(lang of newMedia.subtitleLanguages; track lang) {
+                      <span class="bg-primary text-white px-2 py-1 rounded-full text-sm flex items-center gap-1.5">
+                        {{ lang }}
+                        <button type="button" (click)="$event.stopPropagation(); toggleLanguage(lang, 'subtitle')" class="font-bold leading-none hover:text-slate-200 text-md">&times;</button>
+                      </span>
+                    }
+                  </div>
+                  @if(showSubtitleLangDropdown()) {
+                    <div class="absolute z-10 w-full bg-border mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto border border-surface-light">
+                      @for(lang of availableLanguages; track lang) {
+                        <label class="flex items-center px-4 py-2 hover:bg-surface-light/50 cursor-pointer">
+                          <input type="checkbox" [checked]="newMedia.subtitleLanguages.includes(lang)" (change)="toggleLanguage(lang, 'subtitle')" class="h-4 w-4 rounded border-border bg-surface-light text-primary focus:ring-primary mr-3">
+                          {{ lang }}
+                        </label>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+
+              @if (newMedia.type === 'Movie') {
+                <input type="text" [(ngModel)]="newMedia.sourceUrl" name="sourceUrl" placeholder="e.g. https://storage.yume.tv/movie.mpd" required class="w-full p-3 bg-surface-light rounded-md border border-border">
+              }
+              
+              @if (newMedia.type === 'TV Show') {
+                <div class="space-y-4 pt-4 border-t border-border">
+                  <h3 class="text-xl font-semibold">{{ 'seasonsAndEpisodes' | translate }}</h3>
+                  @for (season of newMedia.seasons; track $index; let sIndex = $index) {
+                    <div class="bg-surface-light p-4 rounded-lg space-y-3">
+                      <div class="flex justify-between items-center">
+                        <h4 class="font-bold">{{ 'season' | translate }} {{ sIndex + 1 }}</h4>
+                        <button type="button" (click)="removeSeason(sIndex)" class="text-red-500 hover:text-red-400 text-sm">{{ 'removeSeason' | translate }}</button>
+                      </div>
+                      @for (episode of season.episodes; track $index; let eIndex = $index) {
+                        <div class="bg-border p-3 rounded-md space-y-2 border-l-2 border-primary">
+                           <div class="flex justify-between items-center">
+                             <p class="text-sm font-semibold">{{ 'episode' | translate }} {{ eIndex + 1 }}</p>
+                             <button type="button" (click)="removeEpisode(sIndex, eIndex)" class="text-red-500 hover:text-red-400 text-xs">{{ 'remove' | translate }}</button>
+                           </div>
+                           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input type="number" [(ngModel)]="episode.episodeNumber" name="epNum-{{sIndex}}-{{eIndex}}" placeholder="{{ 'epNumber' | translate }}" class="w-full p-2 bg-surface rounded text-sm">
+                            <input type="text" [(ngModel)]="episode.title" name="epTitle-{{sIndex}}-{{eIndex}}" placeholder="{{ 'epTitle' | translate }}" class="w-full p-2 bg-surface rounded text-sm">
+                           </div>
+                           <input type="text" [(ngModel)]="episode.sourceUrl" name="epSource-{{sIndex}}-{{eIndex}}" placeholder="e.g. https://storage.yume.tv/show/s1/e1.mpd" class="w-full p-2 bg-surface rounded text-sm">
+                           <input type="text" [(ngModel)]="episode.thumbnailUrl" name="epThumb-{{sIndex}}-{{eIndex}}" placeholder="e.g. https://storage.yume.tv/show/s1/e1_thumb.jpg" class="w-full p-2 bg-surface rounded text-sm">
+                        </div>
+                      }
+                      <button type="button" (click)="addEpisode(sIndex)" class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition">+ {{ 'addEpisode' | translate }}</button>
+                    </div>
+                  }
+                  <button type="button" (click)="addSeason()" class="w-full bg-border text-white py-2 rounded-md hover:bg-surface-light transition">+ {{ 'addSeason' | translate }}</button>
+                </div>
+              }
+
+              <div class="pt-4 border-t border-border space-y-4">
+                <div class="flex items-center space-x-2">
+                  <input type="checkbox" [(ngModel)]="newMedia.isProtected" name="protected" id="isProtected" class="h-4 w-4 rounded border-border text-primary focus:ring-primary">
+                  <label for="isProtected">{{ 'enableWidevine' | translate }}</label>
+                </div>
+                @if (newMedia.isProtected) {
+                  <div class="animate-fade-in-down">
+                    <label for="licenseUrl" class="block text-text-secondary mb-2">{{ 'licenseServerUrl' | translate }}</label>
+                    <input type="text" [(ngModel)]="newMedia.licenseServerUrl" id="licenseUrl" name="licenseUrl" placeholder="https://drm.example.com/license" required class="w-full p-3 bg-surface-light rounded-md border border-border">
+                  </div>
+                }
+              </div>
+
+              <div class="flex items-center gap-4 pt-2">
+                <button type="submit" class="w-full bg-primary text-white py-3 rounded-md font-bold hover:bg-blue-600 transition-colors">
+                  {{ (editingMediaId() ? 'updateMedia' : 'addMedia') | translate }}
+                </button>
+                @if(editingMediaId()) {
+                  <button type="button" (click)="cancelEdit()" class="w-full bg-border text-white py-3 rounded-md font-bold hover:bg-surface-light transition-colors">
+                    {{ 'cancelEdit' | translate }}
+                  </button>
+                }
+              </div>
+            </form>
+          </section>
+
+          <section>
+              <h2 class="text-2xl font-semibold mb-4">{{ 'existingMedia' | translate }}</h2>
+              <div class="bg-surface rounded-lg shadow-lg overflow-x-auto">
+                  <table class="w-full text-left min-w-[700px]">
+                      <thead class="bg-surface-light">
+                          <tr>
+                              <th class="p-4 w-24">{{ 'poster' | translate }}</th>
+                              <th class="p-4">{{ 'title' | translate }}</th>
+                              <th class="p-4">{{ 'type' | translate }}</th>
+                              <th class="p-4">{{ 'year' | translate }}</th>
+                              <th class="p-4">{{ 'ageRating' | translate }}</th>
+                              <th class="p-4">{{ 'actions' | translate }}</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          @for (item of movieService.media(); track item.id) {
+                              <tr class="border-b border-border last:border-b-0 hover:bg-surface-light/50 transition-colors">
+                                  <td class="p-4">
+                                      <img [src]="item.posterUrl" [alt]="item.title" class="w-14 aspect-[4/5] object-cover rounded">
+                                  </td>
+                                  <td class="p-4 font-semibold">{{ item.title }}</td>
+                                  <td class="p-4 text-text-secondary">{{ item.type }}</td>
+                                  <td class="p-4 text-text-secondary">{{ item.releaseYear }}</td>
+                                  <td class="p-4">
+                                      <span class="bg-border text-white px-2 py-1 text-xs font-bold rounded">{{ item.ageRating }}</span>
+                                  </td>
+                                  <td class="p-4">
+                                    <div class="flex items-center space-x-2">
+                                      <button (click)="startEdit(item)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded transition-colors">
+                                        {{ 'edit' | translate }}
+                                      </button>
+                                      <button (click)="deleteMedia(item.id)" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded transition-colors">
+                                        {{ 'delete' | translate }}
+                                      </button>
+                                    </div>
+                                  </td>
+                              </tr>
+                          }
+                      </tbody>
+                  </table>
+              </div>
+          </section>
+        </div>
+      }
+      @case ('settings') {
+        <div class="animate-fade-in">
+          <h1 class="text-4xl font-bold mb-8">{{ 'siteSettings' | translate }}</h1>
+          <div class="bg-surface p-8 rounded-lg shadow-lg max-w-2xl mx-auto space-y-6">
+            <div>
+              <h2 class="text-2xl font-semibold">{{ 'siteBranding' | translate }}</h2>
+              <div class="mt-4">
+                <label for="siteName" class="block text-text-secondary mb-2 text-sm font-semibold">{{ 'siteName' | translate }}</label>
+                <input type="text" id="siteName" name="siteName" [(ngModel)]="siteName" class="w-full p-3 bg-surface-light border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
+              </div>
+            </div>
+
+            <div class="pt-6 border-t border-border">
+                <h2 class="text-2xl font-semibold">{{ 'maintenanceMode' | translate }}</h2>
+                <div class="flex items-center justify-between mt-4">
+                  <label for="maintenanceToggle" class="text-lg">{{ 'enableMaintenanceMode' | translate }}</label>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" [(ngModel)]="maintenanceEnabled" id="maintenanceToggle" class="sr-only peer">
+                    <div class="w-11 h-6 bg-border rounded-full peer peer-focus:ring-2 peer-focus:ring-primary peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
+                <textarea [(ngModel)]="maintenanceMessage" rows="3" placeholder="{{ 'maintenanceMessage' | translate }}" class="w-full p-3 bg-surface-light rounded-md mt-4 border border-border"></textarea>
+            </div>
+            <button (click)="saveSettings()" class="w-full bg-primary text-white py-3 rounded-md font-bold hover:bg-blue-600 transition-colors">{{ 'saveSettings' | translate }}</button>
+          </div>
+        </div>
+      }
+    }
+  </main>
+</div>

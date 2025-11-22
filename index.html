@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Yume TV</title>
+  <base href="/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.13/shaka-player.compiled.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#3B82F6',        // Vibrant Blue
+            'accent': '#FACC15',         // Yellow
+            'background': '#0B1120',     // Very Dark Blue
+            'surface': '#1E293B',        // Slate-900 for cards, inputs
+            'surface-light': '#334155',  // Slate-700 for hover states
+            'border': '#475569',         // Slate-600 for borders
+            'text-primary': '#F1F5F9',   // Slate-100 (Off-white)
+            'text-secondary': '#94A3B8', // Slate-400 (Muted)
+            'pinned-bg': '#39304A',
+            'pinned-tag-bg': 'rgba(219, 39, 119, 0.2)',
+            'pinned-tag-text': '#f9a8d4',
+            'category-update': '#DC2626',
+            'category-general': '#2563EB',
+            'category-suggestion': '#16A34A',
+            'category-question': '#F59E0B',
+            'category-discussion': '#7C3AED',
+            'category-feedback': '#DB2777',
+          },
+          animation: {
+            'fade-in-down': 'fadeInDown 0.2s ease-out',
+            'fade-in-up': 'fadeInUp 0.2s ease-out'
+          },
+          keyframes: {
+            fadeInDown: {
+              '0%': { opacity: '0', transform: 'translateY(-10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    /* Custom scrollbar for horizontal carousels */
+    ::-webkit-scrollbar {
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155; /* surface-light */
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569; /* border */
+    }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "rxjs": "https://aistudiocdn.com/rxjs@^7.8.2?conditions=es2015",
+    "rxjs/operators": "https://aistudiocdn.com/rxjs@^7.8.2/operators?conditions=es2015",
+    "rxjs/ajax": "https://aistudiocdn.com/rxjs@^7.8.2/ajax?conditions=es2015",
+    "rxjs/webSocket": "https://aistudiocdn.com/rxjs@^7.8.2/webSocket?conditions=es2015",
+    "rxjs/testing": "https://aistudiocdn.com/rxjs@^7.8.2/testing?conditions=es2015",
+    "rxjs/fetch": "https://aistudiocdn.com/rxjs@^7.8.2/fetch?conditions=es2015",
+    "@angular/compiler": "https://next.esm.sh/@angular/compiler@^20.3.12?external=rxjs",
+    "@angular/platform-browser": "https://next.esm.sh/@angular/platform-browser@^20.3.12?external=rxjs",
+    "@angular/common/http": "https://next.esm.sh/@angular/common@^20.3.12/http?external=rxjs",
+    "@angular/core": "https://next.esm.sh/@angular/core@^20.3.12?external=rxjs",
+    "@angular/forms": "https://next.esm.sh/@angular/forms@^20.3.12?external=rxjs",
+    "@angular/common": "https://next.esm.sh/@angular/common@^20.3.12?external=rxjs",
+    "@angular/router": "https://next.esm.sh/@angular/router@^20.3.12?external=rxjs",
+    "@angular/core/rxjs-interop": "https://next.esm.sh/@angular/core@^20.3.12/rxjs-interop?external=rxjs"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-background text-text-primary">
+  <app-root></app-root>
+</body>
+</html>

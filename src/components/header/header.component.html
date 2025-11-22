@@ -1,0 +1,69 @@
+
+<header class="fixed top-0 left-0 right-0 bg-background/80 backdrop-blur-md shadow-lg z-40 p-4">
+  <div class="container mx-auto flex justify-between items-center">
+    <div class="flex items-center gap-8">
+      <a routerLink="/" class="text-2xl font-bold text-primary tracking-wider">
+        {{ settingsService.settings().siteName }}
+      </a>
+      <nav class="hidden md:flex items-center space-x-6">
+        <a routerLink="/" routerLinkActive="text-text-primary" [routerLinkActiveOptions]="{exact: true}" class="text-text-secondary hover:text-text-primary transition font-medium">{{ 'home' | translate }}</a>
+        <a routerLink="/browse" routerLinkActive="text-text-primary" class="text-text-secondary hover:text-text-primary transition font-medium">{{ 'browse' | translate }}</a>
+        <a routerLink="/community" routerLinkActive="text-text-primary" class="text-text-secondary hover:text-text-primary transition font-medium">{{ 'community' | translate }}</a>
+      </nav>
+    </div>
+    <nav class="flex items-center space-x-4">
+      <!-- Language Selector -->
+      <div class="relative">
+        <button (click)="toggleLanguageMenu()" type="button" class="flex items-center justify-center w-10 h-10 text-sm bg-surface rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface focus:ring-white font-bold">
+          {{ translationService.language() | uppercase }}
+        </button>
+        @if (isLanguageMenuOpen()) {
+          <div class="origin-top-right absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-surface-light ring-1 ring-black ring-opacity-5 focus:outline-none py-1 animate-fade-in-down z-50">
+            <button (click)="setLanguage('en')" class="block w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-border hover:text-text-primary">English (EN)</button>
+            <button (click)="setLanguage('lv')" class="block w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-border hover:text-text-primary">Latviešu (LV)</button>
+          </div>
+        }
+      </div>
+
+      @if (currentUser(); as user) {
+        <div class="relative">
+            <button (click)="toggleProfileMenu()" type="button" class="flex text-sm bg-surface rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface focus:ring-white">
+                <span class="sr-only">Open user menu</span>
+                @if (user.profilePictureUrl) {
+                    <img class="h-10 w-10 rounded-full object-cover" [src]="user.profilePictureUrl" [alt]="user.username + ' profile picture'">
+                } @else {
+                    <div class="h-10 w-10 rounded-full bg-surface-light flex items-center justify-center">
+                        <svg class="h-8 w-8 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                           <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                }
+            </button>
+
+            @if (isProfileMenuOpen()) {
+                <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-surface-light ring-1 ring-black ring-opacity-5 focus:outline-none py-1 animate-fade-in-down z-50" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
+                    <div class="px-4 py-3 border-b border-border">
+                        <p class="text-sm text-text-secondary">{{ 'signedInAs' | translate }}</p>
+                        <p class="text-sm font-medium text-text-primary truncate">{{ user.username }}</p>
+                    </div>
+                    <div class="py-1" role="none">
+                        @if (isAdminOrMod()) {
+                            <a routerLink="/admin" (click)="isProfileMenuOpen.set(false)" class="block px-4 py-2 text-sm text-text-secondary hover:bg-border hover:text-text-primary w-full text-left" role="menuitem" tabindex="-1">{{ 'adminPanel' | translate }}</a>
+                        }
+                        <a [routerLink]="['/profile', user.id]" (click)="isProfileMenuOpen.set(false)" class="block px-4 py-2 text-sm text-text-secondary hover:bg-border hover:text-text-primary w-full text-left" role="menuitem" tabindex="-1">{{ 'yourProfile' | translate }}</a>
+                        <a routerLink="/settings" (click)="isProfileMenuOpen.set(false)" class="block px-4 py-2 text-sm text-text-secondary hover:bg-border hover:text-text-primary w-full text-left" role="menuitem" tabindex="-1">{{ 'settings' | translate }}</a>
+                        <button (click)="logout()" class="block px-4 py-2 text-sm text-text-secondary hover:bg-border hover:text-text-primary w-full text-left" role="menuitem" tabindex="-1">
+                            {{ 'logout' | translate }}
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+      } @else {
+        <a routerLink="/login" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200 font-semibold">
+          {{ 'login' | translate }}
+        </a>
+      }
+    </nav>
+  </div>
+</header>

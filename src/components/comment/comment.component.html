@@ -1,0 +1,79 @@
+
+
+<div class="flex gap-4">
+  <div class="flex-shrink-0">
+    <img [src]="comment().authorProfilePictureUrl || 'https://picsum.photos/seed/default/40/40'" [alt]="comment().authorUsername" class="w-10 h-10 rounded-full object-cover">
+  </div>
+  <div class="flex-grow">
+    <div class="flex items-center gap-2 text-sm">
+      <span class="font-bold text-white">{{ comment().authorUsername }}</span>
+      <span class="text-slate-400">&middot; {{ timeSince(comment().createdAt) }}</span>
+    </div>
+    @if (isEditing()) {
+      <div class="mt-2">
+        <textarea
+          rows="2"
+          [(ngModel)]="editText"
+          name="edit"
+          class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"></textarea>
+        <div class="flex justify-end gap-2 mt-2">
+          <button (click)="cancelEdit()" class="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded-md font-bold transition text-sm">{{ 'cancel' | translate }}</button>
+          <button (click)="saveEdit()" [disabled]="!editText().trim()" class="bg-primary text-white px-3 py-1 rounded-md font-bold hover:bg-blue-600 transition disabled:bg-slate-600 disabled:cursor-not-allowed text-sm">{{ 'save' | translate }}</button>
+        </div>
+      </div>
+    } @else {
+      <p class="text-slate-300 mt-1 whitespace-pre-wrap">{{ comment().text }}</p>
+    }
+    
+    <div class="flex items-center gap-4 mt-2 text-sm text-slate-400">
+      <div class="flex items-center gap-1">
+        <button (click)="submitVote('like')" [disabled]="!currentUser()" class="p-1 transition" [class.text-green-500]="hasVoted('like')" [class.hover:text-green-400]="!hasVoted('like')" [class.disabled:cursor-not-allowed]="!currentUser()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333V17a1 1 0 001 1h6.758a1 1 0 00.97-1.22l-1.954-4.885a1.5 1.5 0 01.92-1.913l.256-.128a1.5 1.5 0 00.97-1.913l-1.954-4.885a1 1 0 00-.97-1.22H7a1 1 0 00-1 1v6.333z" /></svg>
+        </button>
+        <span class="font-semibold">{{ comment().likes }}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button (click)="submitVote('dislike')" [disabled]="!currentUser()" class="p-1 transition" [class.text-red-500]="hasVoted('dislike')" [class.hover:text-red-400]="!hasVoted('dislike')" [class.disabled:cursor-not-allowed]="!currentUser()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667V3a1 1 0 00-1-1H6.242a1 1 0 00-.97 1.22l1.954 4.885a1.5 1.5 0 01-.92 1.913l-.256.128a1.5 1.5 0 00-.97 1.913l1.954 4.885a1 1 0 00.97 1.22H13a1 1 0 001-1V9.667z" /></svg>
+        </button>
+         <span class="font-semibold">{{ comment().dislikes }}</span>
+      </div>
+       @if(currentUser()) {
+        <button (click)="toggleReply()" class="font-semibold hover:text-white transition">{{ 'forumReply' | translate }}</button>
+      }
+      @if (canModify()) {
+        <button (click)="startEdit()" class="font-semibold hover:text-white transition">{{ 'edit' | translate }}</button>
+        <button (click)="submitDelete()" class="font-semibold hover:text-red-400 transition">{{ 'delete' | translate }}</button>
+      }
+    </div>
+
+    @if(isReplying()) {
+      <div class="mt-4">
+        <textarea
+          rows="2"
+          [(ngModel)]="replyText"
+          name="reply"
+          placeholder="{{ 'forumReplyPlaceholder' | translate }}"
+          class="w-full p-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"></textarea>
+        <div class="flex justify-end gap-2 mt-2">
+          <button (click)="toggleReply()" class="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded-md font-bold transition text-sm">{{ 'cancel' | translate }}</button>
+          <button (click)="submitReply()" [disabled]="!replyText().trim()" class="bg-primary text-white px-3 py-1 rounded-md font-bold hover:bg-red-700 transition disabled:bg-slate-600 disabled:cursor-not-allowed text-sm">{{ 'forumSubmit' | translate }}</button>
+        </div>
+      </div>
+    }
+
+    @if(comment().replies && comment().replies.length > 0) {
+      <div class="mt-4 space-y-4 border-l-2 border-slate-700 pl-4">
+        @for(reply of comment().replies; track reply.id) {
+          <app-comment 
+            [comment]="reply" 
+            [postId]="postId()"
+            (reply)="propagateReply($event)"
+            (vote)="propagateVote($event)"
+            (edit)="propagateEdit($event)"
+            (delete)="propagateDelete($event)" />
+        }
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,41 @@
+
+<div class="flex items-center justify-center min-h-screen">
+  <div class="bg-surface p-8 rounded-lg shadow-2xl w-full max-w-md">
+    <h2 class="text-3xl font-bold text-center text-text-primary mb-6">{{ 'loginTo' | translate }} {{ settingsService.settings().siteName }}</h2>
+    <form (ngSubmit)="onLogin()">
+      <div class="mb-4">
+        <label for="username" class="block text-text-secondary mb-2">{{ 'username' | translate }}</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username"
+          [(ngModel)]="username"
+          required
+          class="w-full p-3 bg-surface-light border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          placeholder="e.g., admin">
+      </div>
+      <div class="mb-6">
+        <label for="password" class="block text-text-secondary mb-2">{{ 'password' | translate }}</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password"
+          [(ngModel)]="password"
+          required
+          class="w-full p-3 bg-surface-light border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          placeholder="••••••••">
+      </div>
+      @if (errorMessage()) {
+        <div class="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-md relative mb-4" role="alert">
+          <span class="block sm:inline">{{ errorMessage()! | translate }}</span>
+        </div>
+      }
+      <button type="submit" class="w-full bg-primary text-white py-3 rounded-md font-bold hover:bg-blue-600 transition-colors duration-300">
+        {{ 'login' | translate }}
+      </button>
+      <p class="text-center text-text-secondary mt-4">
+        {{ 'dontHaveAccount' | translate }} <a routerLink="/register" class="text-primary hover:underline">{{ 'registerHere' | translate }}</a>.
+      </p>
+    </form>
+  </div>
+</div>

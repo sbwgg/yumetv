@@ -1,0 +1,254 @@
+<div 
+  class="relative w-full h-full bg-black flex items-center justify-center text-text-primary overflow-hidden group"
+  (mousemove)="showControls()" 
+  (mouseleave)="hideControlsOnLeave()">
+
+  <video #videoPlayer class="w-full h-full object-contain" (click)="togglePlayPause()">
+      <!-- The source tag is removed because the source is now set programmatically -->
+      Your browser does not support the video tag.
+  </video>
+
+  <!-- "Up Next" Overlay -->
+  @if (showNextEpisodeOverlay() && nextEpisode(); as nextEpInfo) {
+    <div class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20 animate-fade-in-up">
+      <div class="text-center">
+        <p class="text-text-secondary text-lg">{{ 'upNext' | translate }}</p>
+        <h3 class="text-3xl font-bold mb-4">{{ nextEpInfo.details.title }}</h3>
+        <img [src]="nextEpInfo.details.thumbnailUrl" [alt]="nextEpInfo.details.title" class="w-72 h-40 object-cover rounded-lg shadow-lg mb-6">
+        <div class="flex items-center justify-center gap-4">
+          <button (click)="playNextEpisode()" class="bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-600 transition flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M14.805 18.44c-1.25.713-2.805-.19-2.805-1.629v-2.34l-6.945 3.968c-1.25.714-2.805-.189-2.805-1.628V8.688c0-1.438 1.555-2.342 2.805-1.628L12 11.027v-2.34c0-1.44 1.555-2.343 2.805-1.63l7.32 4.125c1.25.714 1.25 2.541 0 3.255l-7.32 4.005zM12 13.37l7.125 4.072L21.975 12l-9.975-5.7 1.475.84v4.43z"></path></svg>
+            <span>{{ 'playNext' | translate }}</span>
+          </button>
+           <button (click)="cancelAutoPlayNext()" class="bg-surface-light/80 text-text-primary font-bold py-3 px-6 rounded-lg hover:bg-surface-light">{{ 'cancel' | translate }}</button>
+        </div>
+        @if (nextEpisodeCountdown() !== null) {
+          <p class="text-text-secondary mt-4 text-sm">{{ 'playingIn' | translate }} {{ nextEpisodeCountdown() }} {{ 'seconds' | translate }}...</p>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Episode Selector Menu -->
+  @if (showEpisodesMenu()) {
+    <div class="absolute inset-0 bg-background/80 backdrop-blur-md z-30 p-8 flex flex-col animate-fade-in-up" (click)="showEpisodesMenu.set(false)">
+      <div class="flex-shrink-0 flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold">{{ 'episodes' | translate }}</h2>
+         <button (click)="showEpisodesMenu.set(false)" class="bg-surface/70 rounded-full p-2 hover:bg-surface/100 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-text-primary"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="flex-grow flex gap-8 overflow-hidden" (click)="$event.stopPropagation()">
+        <!-- Seasons List -->
+        <div class="w-1/4 bg-surface/50 rounded-lg p-2 overflow-y-auto">
+          <ul class="space-y-1">
+            @for (season of media().seasons; track season.seasonNumber) {
+              <li>
+                <button (click)="selectedSeasonForMenu.set(season.seasonNumber)" class="w-full text-left px-4 py-3 rounded-md transition"
+                  [class.bg-primary]="selectedSeasonForMenu() === season.seasonNumber"
+                  [class.hover:bg-surface-light]="selectedSeasonForMenu() !== season.seasonNumber">
+                  {{ 'season' | translate }} {{ season.seasonNumber }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+        <!-- Episodes List -->
+        <div class="w-3/4 bg-surface/50 rounded-lg p-2 overflow-y-auto">
+          @if (selectedSeasonDetails(); as currentSeason) {
+            <ul class="space-y-2">
+              @for (episode of currentSeason.episodes; track episode.episodeNumber) {
+                <li [class.bg-primary/50]="seasonNumber() === currentSeason.seasonNumber && episodeNumber() === episode.episodeNumber" class="rounded-lg">
+                  <a [routerLink]="['/watch', 'tv', media().id, 's', currentSeason.seasonNumber, 'e', episode.episodeNumber]" (click)="showEpisodesMenu.set(false)"
+                     class="flex items-center p-3 rounded-lg hover:bg-surface-light/50 transition-colors duration-200 w-full">
+                    <img [src]="episode.thumbnailUrl" [alt]="episode.title" class="w-32 h-20 object-cover rounded-md mr-4 flex-shrink-0">
+                    <div class="flex-grow overflow-hidden">
+                      <p class="font-bold text-text-primary truncate">{{ episode.episodeNumber }}. {{ episode.title }}</p>
+                    </div>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Custom Controls Overlay -->
+  <div 
+    class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/70 transition-opacity duration-300 pointer-events-none"
+    [class.opacity-0]="!controlsVisible() || showNextEpisodeOverlay()"
+    [class.opacity-100]="controlsVisible() && !showNextEpisodeOverlay()">
+    
+    <!-- Top Bar -->
+    <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-center pointer-events-auto">
+       <div class="flex items-center gap-4">
+        <button (click)="goBack()" class="bg-background/50 rounded-full p-2 hover:bg-background/100 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <div>
+          <h2 class="text-xl font-bold">{{ media().title }}</h2>
+          @if(media().type === 'TV Show' && seasonNumber() && episodeNumber()) {
+            <p class="text-sm text-text-secondary">S{{seasonNumber()}} E{{episodeNumber()}}</p>
+          }
+        </div>
+      </div>
+      @if (media().type === 'TV Show') {
+        <button (click)="showEpisodesMenu.set(true)" class="bg-background/50 rounded-md p-2 hover:bg-background/100 transition flex items-center gap-2 px-4">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75ZM2 10a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" /></svg>
+          <span>{{ 'episodes' | translate }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Center Play Button (only visible when paused) -->
+    @if (!isPlaying()) {
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-auto">
+        <button (click)="togglePlayPause()" class="bg-black/50 p-4 rounded-full hover:bg-primary transition-colors duration-300 transform hover:scale-110">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-16 h-16">
+            <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Bottom Controls Bar -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 space-y-2 pointer-events-auto" (mouseenter)="keepControlsVisible()" (mouseleave)="showControls()">
+      
+      <!-- Progress Bar -->
+      <div class="w-full flex items-center">
+          <input 
+            type="range" 
+            class="w-full"
+            min="0"
+            [max]="duration()"
+            [value]="currentTime()"
+            (input)="handleProgressChange($event)">
+      </div>
+
+      <!-- Controls Row -->
+      <div class="flex items-center justify-between">
+        
+        <!-- Left Controls -->
+        <div class="flex items-center space-x-4">
+           <div class="flex items-center space-x-2">
+              <button (click)="toggleMute()" class="hover:text-primary transition">
+                @if (isMuted() || volume() === 0) {
+                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.66 1.905H6.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06zM18.584 14.828a.75.75 0 001.06-1.06L15.707 10l3.937-3.768a.75.75 0 00-1.06-1.06L14.646 8.94 10.707 5.232a.75.75 0 00-1.06 1.06L13.586 10l-3.937 3.768a.75.75 0 001.06 1.06l3.937-3.768 3.937 3.768z" /></svg>
+                } @else if (volume() > 0.5) {
+                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.66 1.905H6.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06zM18.53 9.47a.75.75 0 00-1.06 0c-.417.417-.68 1.009-.68 1.65s.263 1.233.68 1.65a.75.75 0 001.06-1.06c-.091-.091-.149-.205-.149-.33s.058-.239.149-.33a.75.75 0 000-1.06z" /><path d="M19.94 8.06a.75.75 0 00-1.06 0c-.639.639-1.04 1.515-1.04 2.47s.401 1.831 1.04 2.47a.75.75 0 001.06-1.06c-.328-.328-.535-.774-.535-1.25s.207-.922.535-1.25a.75.75 0 000-1.06z" /></svg>
+                } @else {
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.66 1.905H6.44l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06zM16.5 12a.75.75 0 000 1.5h.75a.75.75 0 000-1.5h-.75z" /></svg>
+                }
+              </button>
+              <input 
+                type="range"
+                class="w-24"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="isMuted() ? 0 : volume()"
+                (input)="handleVolumeChange($event)">
+          </div>
+          <div class="text-sm font-mono w-28 text-center">
+            {{ formatTime(currentTime()) }} / {{ formatTime(duration()) }}
+          </div>
+        </div>
+        
+        <!-- Center Controls -->
+        <div class="flex items-center space-x-6">
+           <button (click)="skip(-10)" class="hover:text-primary transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path d="M9.195 18.44c1.25.713 2.805-.19 2.805-1.629v-2.34l6.945 3.968c1.25.714 2.805-.189-2.805-1.628V8.688c0-1.438-1.555-2.342-2.805-1.628L12 11.027v-2.34c0-1.44-1.555-2.343-2.805-1.63L1.875 11.18c-1.25.714-1.25 2.541 0 3.255l7.32 4.005zM12 13.37l-7.125 4.072L2.025 12l9.975-5.7-1.475.84v4.43z"></path></svg>
+          </button>
+           <button (click)="togglePlayPause()" class="hover:text-primary transition transform scale-125">
+            @if (isPlaying()) {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10">
+                <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75zM16.5 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0v-12a.75.75 0 01.75-.75z" clip-rule="evenodd"></path>
+              </svg>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10">
+                <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd"></path>
+              </svg>
+            }
+          </button>
+          <button (click)="skip(10)" class="hover:text-primary transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path d="M14.805 18.44c-1.25.713-2.805-.19-2.805-1.629v-2.34l-6.945 3.968c-1.25.714-2.805-.189-2.805-1.628V8.688c0-1.438 1.555-2.342 2.805-1.628L12 11.027v-2.34c0-1.44 1.555-2.343 2.805-1.63l7.32 4.125c1.25.714 1.25 2.541 0 3.255l-7.32 4.005zM12 13.37l7.125 4.072L21.975 12l-9.975-5.7 1.475.84v4.43z"></path></svg>
+          </button>
+        </div>
+
+        <!-- Right Controls -->
+        <div class="flex items-center space-x-4 relative">
+          @if (nextEpisode(); as nextEp) {
+             <button (click)="playNextEpisode()" title="Next Episode" class="hover:text-primary transition">
+               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8"><path d="M14.805 18.44c-1.25.713-2.805-.19-2.805-1.629v-2.34l-6.945 3.968c-1.25.714-2.805-.189-2.805-1.628V8.688c0-1.438 1.555-2.342 2.805-1.628L12 11.027v-2.34c0-1.44 1.555-2.343 2.805-1.63l7.32 4.125c1.25.714 1.25 2.541 0 3.255l-7.32 4.005zM12 13.37l7.125 4.072L21.975 12l-9.975-5.7 1.475.84v4.43z"></path></svg>
+             </button>
+          }
+          @if (media().isProtected) {
+            <div class="bg-blue-600/80 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1" title="Protected with Widevine">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5v1.25A2.25 2.25 0 0 0 2.25 8v5.25A2.25 2.25 0 0 0 4.5 15.5h7a2.25 2.25 0 0 0 2.25-2.25V8A2.25 2.25 0 0 0 11.5 5.75V4.5A3.5 3.5 0 0 0 8 1Zm2 4.75V4.5a2 2 0 1 0-4 0v1.25a.75.75 0 0 1 0 1.5h4a.75.75 0 0 1 0-1.5Z" clip-rule="evenodd" /></svg>
+              <span>WV</span>
+            </div>
+          }
+          
+          <button (click)="showSettings.set(!showSettings())" class="hover:text-primary transition relative">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+              <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 5.85c-.09.5.05.99.44 1.32l.828.69c.45.37.56.99.28 1.48l-1.37 2.373c-.28.49-.89.67-1.38.38l-.833-.48c-.48-.28-.99-.05-1.32.44l-2.12 2.12c-.34.34-.34.89 0 1.23l.833.48c.49.28.67.89.38 1.38l-2.372 1.37c-.49.28-1.48.56-1.48.28l-.69.828c-.32.44-.99.5-.99.09l-2.12-.178c-.904-.15-1.567-.933-1.567-1.85v-2.23c0-.917.663-1.699 1.567-1.85l2.12-.178c.5-.04.99.1.99.09l.69.828c.37.45.99.56 1.48.28l2.372-1.37c.49-.28.67-.89.38-1.38l-.48-.833c-.28-.48-.05-.99.44-1.32l2.12-2.12c.34-.34.89-.34 1.23 0l.48.833c.28.49.89.67 1.38.38l1.37 2.372c.28.49.1 1.11-.28 1.48l-.828.69c-.44.32-.5.99-.09.99l.178 2.12c.15.904.933 1.567 1.85 1.567h2.23c.917 0 1.699-.663 1.85-1.567l.178-2.12c.04-.5-.1-.99-.09-.99l-.828-.69c-.45-.37-.56-.99-.28-1.48l1.37-2.372c.28-.49.89-.67 1.38-.38l.833.48c.48.28.99.05 1.32-.44l2.12-2.12c.34-.34.34-.89 0 1.23l-.833-.48c-.49-.28-.67-.89-.38-1.38l2.372-1.37c.49-.28 1.11.1 1.48.28l.69-.828c.32-.44.99-.5.99-.09l2.12.178c.904.15 1.567.933 1.567 1.85v2.23c0 .917-.663-1.699-1.567 1.85l-2.12.178c-.5.04-.99-.1-.99-.09l-.69-.828c-.37-.45-.99-.56-1.48-.28l-2.372 1.37c-.49.28-.67.89-.38 1.38l.48.833c.28.48.05.99-.44 1.32l-2.12 2.12c-.34.34-.89.34-1.23 0l-.48-.833c-.28-.49-.89-.67-1.38-.38l-1.37-2.372c-.28-.49-.1-1.11.28-1.48l.828-.69c.44-.32.5-.99.09-.99l-.178-2.12c-.15-.904-.933-1.567-1.85-1.567h-2.23z" clip-rule="evenodd" />
+            </svg>
+            @if (showSettings()) {
+              <div class="absolute bottom-12 right-0 bg-black/80 p-4 rounded-lg w-80 animate-fade-in-up text-sm backdrop-blur-sm">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 class="font-semibold mb-2 border-b border-border pb-1 text-text-secondary">{{ 'audio' | translate }}</h4>
+                    @if(audioTracks().length > 1) {
+                      <ul class="space-y-1 max-h-40 overflow-y-auto pr-1">
+                        @for(track of audioTracks(); track track.lang) {
+                          <li>
+                            <button (click)="changeAudioTrack(track.lang)" class="w-full text-left px-2 py-1 rounded transition-colors" [class.bg-primary]="selectedAudioLang() === track.lang" [class.hover:bg-white/10]="selectedAudioLang() !== track.lang">
+                              {{ track.name }}
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                       <p class="text-xs text-text-secondary">Default</p>
+                    }
+                  </div>
+                  <div>
+                    <h4 class="font-semibold mb-2 border-b border-border pb-1 text-text-secondary">{{ 'subtitles' | translate }}</h4>
+                    @if (subtitleTracks().length > 0) {
+                      <ul class="space-y-1 max-h-40 overflow-y-auto pr-1">
+                        <li>
+                          <button (click)="changeSubtitleTrack('off')" class="w-full text-left px-2 py-1 rounded transition-colors" [class.bg-primary]="selectedSubtitleLang() === 'off'" [class.hover:bg-white/10]="selectedSubtitleLang() !== 'off'">
+                            Off
+                          </button>
+                        </li>
+                         @for(track of subtitleTracks(); track track.lang) {
+                          <li>
+                            <button (click)="changeSubtitleTrack(track.lang)" class="w-full text-left px-2 py-1 rounded transition-colors" [class.bg-primary]="selectedSubtitleLang() === track.lang" [class.hover:bg-white/10]="selectedSubtitleLang() !== track.lang">
+                              {{ track.name }}
+                            </button>
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      <p class="text-xs text-text-secondary">Unavailable</p>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </button>
+          
+          <button (click)="toggleFullscreen()" class="hover:text-primary transition">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+              <path fill-rule="evenodd" d="M15 3.75a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V5.56l-3.47 3.47a.75.75 0 01-1.06-1.06L13.44 4.5h-3.19a.75.75 0 010-1.5h4.5zm-6 16.5a.75.75 0 01-.75-.75v-4.5a.75.75 0 011.5 0v3.19l3.47-3.47a.75.75 0 011.06 1.06L10.56 19.5h3.19a.75.75 0 010 1.5h-4.5z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

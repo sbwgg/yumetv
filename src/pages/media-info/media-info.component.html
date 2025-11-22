@@ -1,0 +1,140 @@
+
+<div class="container mx-auto px-0 md:px-4 py-8">
+  @if (media(); as media) {
+    <div class="shadow-2xl w-full bg-surface rounded-lg max-w-6xl mx-auto overflow-hidden">
+        <div class="relative">
+          <img [src]="media.thumbnailUrl || media.posterUrl.replace('400/600', '1200/500')" [alt]="media.title" class="w-full h-auto md:h-96 object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+          <div class="absolute bottom-0 left-0 p-4 md:p-8">
+              <h1 class="text-3xl md:text-5xl font-bold text-text-primary shadow-lg">{{ media.title }}</h1>
+          </div>
+        </div>
+        
+        <div class="p-4 md:p-8">
+          <div class="flex items-center space-x-4 mb-4">
+            <span class="text-text-secondary">{{ media.releaseYear }}</span>
+            <span class="border-l border-border h-4"></span>
+            <span class="text-text-secondary">{{ media.type }}</span>
+            <span class="border-l border-border h-4"></span>
+            <span class="bg-surface-light text-text-primary px-2 py-1 text-xs font-bold rounded">{{ media.ageRating }}</span>
+          </div>
+          <p class="text-text-secondary mb-6 max-w-4xl">{{ media.description }}</p>
+
+          <div class="flex flex-wrap gap-2 mb-6">
+            @for(genre of media.genre; track genre) {
+              <span class="bg-surface-light text-text-secondary px-3 py-1 rounded-full text-sm">{{ genre }}</span>
+            }
+          </div>
+          
+          @if (media.type === 'Movie') {
+            @if (movieProgress(); as progress) {
+               <a [routerLink]="['/watch', 'movie', media.id]" class="w-full md:w-auto inline-flex bg-primary text-white py-3 px-8 rounded-lg text-lg font-bold items-center justify-center space-x-2 hover:bg-blue-600 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M9.195 18.44c1.25.713 2.805-.19 2.805-1.629v-2.34l6.945 3.968c1.25.714 2.805-.189-2.805-1.628V8.688c0-1.438-1.555-2.342-2.805-1.628L12 11.027v-2.34c0-1.44-1.555-2.343-2.805-1.63L1.875 11.18c-1.25.714-1.25 2.541 0 3.255l7.32 4.005zM12 13.37l-7.125 4.072L2.025 12l9.975-5.7-1.475.84v4.43z"></path></svg>
+                <span>Resume ({{ formatProgressTime(progress.progress) }})</span>
+              </a>
+            } @else {
+               <a [routerLink]="['/watch', 'movie', media.id]" class="w-full md:w-auto inline-flex bg-primary text-white py-3 px-8 rounded-lg text-lg font-bold items-center justify-center space-x-2 hover:bg-blue-600 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                  <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                </svg>
+                <span>{{ 'play' | translate }}</span>
+              </a>
+            }
+          }
+
+          @if (media.type === 'TV Show' && media.seasons && media.seasons!.length > 0) {
+            <div class="mb-6">
+              @if (lastWatchedTvEpisode(); as lastEp) {
+                 <a [routerLink]="['/watch', 'tv', media.id, 's', lastEp.seasonNumber, 'e', lastEp.episodeNumber]" class="w-full md:w-auto inline-flex bg-primary text-white py-3 px-8 rounded-lg text-lg font-bold items-center justify-center space-x-2 hover:bg-blue-600 transition mb-6">
+                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"><path d="M9.195 18.44c1.25.713 2.805-.19 2.805-1.629v-2.34l6.945 3.968c1.25.714 2.805-.189-2.805-1.628V8.688c0-1.438-1.555-2.342-2.805-1.628L12 11.027v-2.34c0-1.44-1.555-2.343-2.805-1.63L1.875 11.18c-1.25.714-1.25 2.541 0 3.255l7.32 4.005zM12 13.37l-7.125 4.072L2.025 12l9.975-5.7-1.475.84v4.43z"></path></svg>
+                  <span>Resume S{{lastEp.seasonNumber}} E{{lastEp.episodeNumber}}</span>
+                </a>
+              }
+              <h3 class="text-2xl font-bold mb-3 text-text-primary">{{ 'seasons' | translate }}</h3>
+              <div class="flex items-center border-b border-border">
+                @for (season of media.seasons; track season.seasonNumber; let i = $index) {
+                  <button 
+                    (click)="selectedSeasonIndex.set(i)"
+                    class="px-4 py-2 font-semibold transition"
+                    [class.text-primary]="selectedSeasonIndex() === i"
+                    [class.border-b-2]="selectedSeasonIndex() === i"
+                    [class.border-primary]="selectedSeasonIndex() === i"
+                    [class.text-text-secondary]="selectedSeasonIndex() !== i">
+                    {{ 'season' | translate }} {{ season.seasonNumber }}
+                  </button>
+                }
+              </div>
+              <div class="mt-4 space-y-3 max-h-96 overflow-y-auto">
+                @for (episode of media.seasons![selectedSeasonIndex()].episodes; track episode.episodeNumber) {
+                  <div class="flex items-center p-2 rounded-lg hover:bg-surface-light/50 transition-colors">
+                    <img [src]="episode.thumbnailUrl" [alt]="episode.title" class="w-32 h-20 object-cover rounded-md mr-4">
+                    <div class="flex-grow">
+                      <p class="font-bold text-text-primary">{{ episode.episodeNumber }}. {{ episode.title }}</p>
+                    </div>
+                    <a [routerLink]="['/watch', 'tv', media.id, 's', media.seasons![selectedSeasonIndex()].seasonNumber, 'e', episode.episodeNumber]" class="bg-surface-light p-2 rounded-full hover:bg-primary transition">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                      </svg>
+                    </a>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Comments Section -->
+          <div class="mt-8">
+            <h3 class="text-2xl font-bold mb-4 text-text-primary">{{ 'comments' | translate }}</h3>
+            @if(authService.currentUser()) {
+              <form (ngSubmit)="addComment()" class="flex space-x-2 mb-6">
+                <input type="text" [(ngModel)]="newComment" name="comment" placeholder="{{ 'addCommentPlaceholder' | translate }}" class="flex-grow p-3 bg-surface-light rounded-md text-text-primary border border-border focus:outline-none focus:ring-2 focus:ring-primary">
+                <button type="submit" class="bg-primary text-white px-6 py-3 rounded-md font-bold hover:bg-blue-600 transition">{{ 'postComment' | translate }}</button>
+              </form>
+            } @else {
+              <p class="text-text-secondary mb-6">{{ 'mustBeLoggedInToComment' | translate }}</p>
+            }
+
+            <div class="space-y-4 max-h-96 overflow-y-auto pr-2">
+              @for (comment of media.comments; track comment.timestamp) {
+                <div class="bg-surface-light p-4 rounded-lg">
+                  @if (editingCommentTimestamp()?.getTime() === comment.timestamp.getTime()) {
+                    <div class="flex items-center gap-2">
+                      <input 
+                        type="text" 
+                        [ngModel]="editingCommentText()"
+                        (ngModelChange)="editingCommentText.set($event)"
+                        class="flex-grow p-2 bg-surface rounded-md text-text-primary border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                        (keydown.enter)="saveCommentEdit()"
+                        (keydown.escape)="cancelEdit()">
+                      <button (click)="saveCommentEdit()" class="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700">{{ 'save' | translate }}</button>
+                      <button (click)="cancelEdit()" class="bg-border text-white px-3 py-1 rounded-md text-sm hover:bg-surface-light">{{ 'cancel' | translate }}</button>
+                    </div>
+                  } @else {
+                    <div class="flex justify-between items-start">
+                      <div>
+                        <p class="font-bold text-text-primary">{{ comment.username }}</p>
+                        <p class="text-text-secondary whitespace-pre-wrap">{{ comment.text }}</p>
+                      </div>
+                      @if(isAdminOrMod()) {
+                        <div class="flex items-center gap-2 flex-shrink-0 ml-4">
+                          <button (click)="startEditComment(comment)" class="text-blue-400 hover:text-blue-300 text-xs font-semibold">{{ 'edit' | translate }}</button>
+                          <button (click)="deleteComment(comment.timestamp)" class="text-red-400 hover:text-red-300 text-xs font-semibold">{{ 'delete' | translate }}</button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              } @empty {
+                <p class="text-text-secondary">{{ 'noCommentsYet' | translate }}</p>
+              }
+            </div>
+          </div>
+        </div>
+    </div>
+  } @else {
+     <div class="text-center py-20">
+      <h1 class="text-4xl font-bold text-primary mb-4">Media Not Found</h1>
+      <p class="text-text-secondary text-lg">We couldn't find the content you're looking for.</p>
+    </div>
+  }
+</div>

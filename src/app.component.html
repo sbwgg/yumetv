@@ -1,0 +1,22 @@
+
+@if (isMaintenanceActive()) {
+  <div class="fixed inset-0 bg-background flex items-center justify-center z-50">
+    <div class="text-center p-8 bg-surface rounded-lg shadow-2xl max-w-lg mx-4">
+      <svg class="mx-auto h-12 w-12 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-4.243-4.243l3.275-3.275a4.5 4.5 0 00-6.336 4.486c.046.58.106 1.158.24 1.724m-4.861 5.439L5.121 9.723A3.004 3.004 0 019.364 5.48l3.635 3.635m-4.243 4.243l3.635 3.635" />
+      </svg>
+      <h1 class="mt-4 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">Under Maintenance</h1>
+      <p class="mt-4 text-text-secondary">
+        {{ settingsService.settings().maintenanceMode.message }}
+      </p>
+      <p class="mt-2 text-slate-500 text-sm">We'll be back online shortly. Thank you for your patience.</p>
+    </div>
+  </div>
+} @else {
+  @if (!isPlayerPage() && !isAdminPanel()) {
+    <app-header></app-header>
+  }
+  <main [class.pt-20]="!isPlayerPage() && !isAdminPanel()">
+    <router-outlet></router-outlet>
+  </main>
+}
