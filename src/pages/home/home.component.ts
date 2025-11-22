@@ -56,7 +56,8 @@ export class HomeComponent {
   
   years = computed(() => {
     const allYears = this.movieService.media().map(m => m.releaseYear);
-    return Array.from(new Set(allYears)).sort((a, b) => b - a);
+    // FIX: Explicitly type sort parameters as numbers to resolve arithmetic operation error.
+    return Array.from(new Set(allYears)).sort((a: number, b: number) => b - a);
   });
 
   recentlyWatchedMedia = computed(() => {

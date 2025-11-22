@@ -10,7 +10,46 @@ The application is a modern Angular Single Page Application (SPA). It uses domai
 
 ---
 
-## 2. Server & Deployment Prerequisites
+## 2. Production Configuration (CRITICAL)
+
+For security and functionality, critical configuration is managed through a runtime configuration file. Before deploying, you **must** create an `env.js` file in the project's root directory (the same directory as `index.html`).
+
+This file provides your admin credentials and email API key to the application **without** exposing them in the main source code.
+
+### Step 2.1: Create the `env.js` File
+
+In your project root, create a new file named `env.js`.
+
+### Step 2.2: Add Configuration
+
+Copy and paste the following content into your new `env.js` file. **You must fill in the placeholder values.**
+
+```javascript
+// /env.js
+
+// This file provides runtime configuration to the Yume TV application.
+// Fill in the values below for your production environment.
+// IMPORTANT: DO NOT commit this file to a public repository.
+
+window.YUME_TV_CONFIG = {
+  // Credentials for the site administrator.
+  // This account is separate from the user database for enhanced security.
+  ADMIN_USER: "your_admin_username",
+  ADMIN_PASSWORD: "your_strong_admin_password",
+
+  // API Key for the Resend email service (https://resend.com)
+  // This is REQUIRED for sending user verification emails.
+  RESEND_API_KEY: "re_xxxxxxxxxxxxxxxxxxxx",
+
+  // The "From" email address for sending verification emails.
+  // This MUST be an address verified with your Resend account.
+  RESEND_FROM_EMAIL: "noreply@yourdomain.com"
+};
+```
+
+---
+
+## 3. Server & Deployment Prerequisites
 
 -   **Ubuntu 24 Server**: A clean installation of Ubuntu 24.
 -   **Sudo Access**: A user account with `sudo` privileges.
@@ -18,34 +57,6 @@ The application is a modern Angular Single Page Application (SPA). It uses domai
     *   One for the main site (e.g., `yume.tv`).
     *   One for the admin panel (e.g., `panel.yume.tv`).
 -   **DNS Configuration**: Both domains (or subdomains) must have **A records** pointing to your server's public IP address.
-
----
-
-## 3. Environment Variable Configuration
-
-For security, critical configuration is managed through environment variables. Before building the application, you must create a `.env` file in the project root.
-
-```bash
-# Navigate to the project directory
-cd /var/www/yume-tv
-
-# Create the .env file
-sudo nano .env
-```
-
-Add the following content to the file. **These are mandatory for production.**
-
-```env
-# Credentials for the super administrator.
-# This account is separate from the user database for security.
-ADMIN_USER=your_admin_username
-ADMIN_PASSWORD=your_strong_admin_password
-
-# API Key for the Resend email service (https://resend.com)
-# Required for sending user verification emails.
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
-```
-Save the file and exit. The application build process will automatically pick up these variables.
 
 ---
 
@@ -94,8 +105,8 @@ sudo git clone <your-repository-url> /var/www/yume-tv
 #### Method B: Using SCP/Rsync (For Local Files)
 Use this method if your project files are on your local machine. From your **local terminal**, run:
 ```bash
-# Ensure you exclude node_modules and .env
-rsync -avz --exclude 'node_modules' --exclude '.env' /path/to/your/local/project/ your_user@your_server_ip:/tmp/yume-tv-upload
+# Ensure you exclude node_modules. Include your env.js file.
+rsync -avz --exclude 'node_modules' /path/to/your/local/project/ your_user@your_server_ip:/tmp/yume-tv-upload
 
 # Then, on the server, move the files to the correct location
 ssh your_user@your_server_ip
@@ -122,7 +133,14 @@ This command compiles the Angular app into static files located in the `dist/` d
 npm run build
 ```
 
-**4. Set Permissions**
+**4. Copy Configuration File**
+The `env.js` file needs to be in the final `dist` directory to be served.
+```bash
+# Copy your env.js from the project root into the dist folder
+sudo cp /var/www/yume-tv/env.js /var/www/yume-tv/dist/env.js
+```
+
+**5. Set Permissions**
 Ensure the Nginx web server user (`www-data`) can read the application files.
 ```bash
 sudo chown -R www-data:www-data /var/www/yume-tv
@@ -203,59 +221,52 @@ When prompted, choose to redirect all HTTP traffic to HTTPS. Certbot will also s
 
 ## 5. Post-Deployment: Initial Setup
 
-1.  **Log in as Administrator**: Navigate to your admin panel domain (e.g., `https://panel.yume.tv/login`) and log in using the `ADMIN_USER` and `ADMIN_PASSWORD` you defined. Use the **"Content Management"** tab to add media.
+1.  **Log in as Administrator**: Navigate to your admin panel domain (e.g., `https://panel.yume.tv/login`) and log in using the `ADMIN_USER` and `ADMIN_PASSWORD` you defined in `env.js`. Use the **"Content Management"** tab to add media.
 2.  **User Registration**: Regular users can register on the main site (e.g., `https://yume.tv`). They will receive a verification email from Resend to activate their account.
 
 ---
 
 ## 6. Production Data Persistence
 
-This application uses a sophisticated frontend-only persistence strategy suitable for production deployment.
+This application has been architected to provide a persistent, database-like experience that works across all browsers and sessions, a feature essential for a production environment.
 
-### Current Strategy: Unified Cookie Storage
+### Current Strategy: Simulated Cloud Database
 
--   All application data (users, media, posts, settings) is managed by a central `StorageService`.
--   This service uses **browser cookies** instead of `localStorage`. This is a deliberate design choice to enable seamless state sharing across multiple subdomains (e.g., `yume.tv` and `panel.yume.tv`), which is a security requirement that `localStorage` cannot meet.
--   This approach provides a robust, "database-like" experience within the constraints of a frontend-only application.
+-   To achieve data persistence without a traditional backend, the application uses a **centralized cloud JSON store** (`jsonstorage.net`) as its database.
+-   A new central `DatabaseService` manages all application data (users, media, posts, settings). It fetches the entire state when the app loads and saves it back whenever changes are made.
+-   This approach ensures that any data created or modified by a user in one browser is immediately available on any other browser or device that accesses the application.
+
+### **IMPORTANT: Production Security Warning**
+
+The current implementation uses a **public, anonymous JSON store**. This is an excellent solution for demonstration and prototyping, as it perfectly simulates a real database. However, it is **NOT secure for a real production application that handles sensitive user data** because the database URL is publicly accessible in the frontend code.
 
 ### Path to a Real Backend
 
-As your platform grows, you may want to migrate to a dedicated backend API and database. This architecture is designed to make that transition straightforward.
+For a true production deployment, you should replace the simulated database with a secure backend API. The application's service-based architecture is designed to make this transition straightforward.
 
 **Migration Steps:**
 
-1.  **Build a Backend API**: Create a server application (e.g., using Node.js/Express, Python/Django, etc.) with a database (e.g., PostgreSQL, MongoDB). This API should have endpoints for managing users, media, posts, etc. (e.g., `POST /api/users`, `GET /api/media`).
-2.  **Replace Service Logic**: One by one, update the services in this Angular application (`AuthService`, `MovieService`, `ForumService`) to use Angular's `HttpClient`.
-3.  **Example: Updating `AuthService`**:
-    *   Inject `HttpClient` into `AuthService`.
-    *   Replace calls like `this.storageService.setItem(...)` with `this.http.post(...)` to your new API.
-    *   Example `login` method transformation:
-        ```typescript
-        // Before (current implementation)
-        login(username, password) {
-            const user = this.users().find(...);
-            // ... logic using local data
-            this.currentUser.set(user);
-        }
+1.  **Build a Secure Backend API**: Create a server application (e.g., using Node.js/Express, Python/Django) with a private database (e.g., PostgreSQL, MongoDB). This API must have secure, authenticated endpoints for all data operations (e.g., `POST /api/users`, `GET /api/media`).
+2.  **Replace `DatabaseService` Logic**: Modify the `DatabaseService` to communicate with your new secure API instead of the public JSON store.
+3.  **Example: Updating `DatabaseService` `loadState` method**:
+    ```typescript
+    // Before (current implementation)
+    private loadState(): void {
+        this.http.get<AppState>(this.PUBLIC_DB_URL).subscribe(...);
+    }
 
-        // After (with a real backend)
-        login(username, password): Observable<User> {
-            return this.http.post<User>('/api/auth/login', { username, password }).pipe(
-                tap(user => this.currentUser.set(user))
-            );
-        }
-        ```
+    // After (with a real backend)
+    private loadState(): void {
+        // Assume you have endpoints for each data type
+        forkJoin({
+            users: this.http.get<User[]>('/api/users'),
+            media: this.http.get<Media[]>('/api/media'),
+            // ... other data types
+        }).subscribe(initialState => {
+            this.state.set(initialState);
+        });
+    }
+    ```
+4.  Update the save logic to call specific, authenticated API endpoints (e.g., `this.http.post('/api/media', newMediaItem)`).
+
 This phased approach allows you to scale your application's backend capabilities without requiring a complete rewrite of the frontend logic.
-
----
-
-## 7. Managing the Application
-
-### Updating the Application
-To deploy updates:
-1.  Connect to your server via SSH.
-2.  Navigate to the project directory: `cd /var/www/yume-tv`.
-3.  Pull the latest changes: `sudo git pull origin main`.
-4.  Install any new dependencies: `npm install`.
-5.  Re-build the application: `npm run build`.
-6.  Ensure permissions are correct: `sudo chown -R www-data:www-data /var/www/yume-tv`.

@@ -1,8 +1,7 @@
-import { Injectable, signal, effect, inject } from '@angular/core';
+import { Injectable, signal, effect, inject, computed } from '@angular/core';
 import { Media, Comment, Rating } from '../shared/models/movie.model';
-import { StorageService } from './storage.service';
+import { DatabaseService } from './database.service';
 
-const MEDIA_STORAGE_KEY = 'yume_tv_media';
 const AVAILABLE_LANGUAGES = [
     'English', 'Spanish', 'French', 'German', 'Japanese', 'Korean', 
     'Mandarin', 'Cantonese', 'Italian', 'Portuguese', 'Russian', 'Hindi', 'Arabic'
@@ -10,47 +9,25 @@ const AVAILABLE_LANGUAGES = [
 
 @Injectable({ providedIn: 'root' })
 export class MovieService {
-  private mockMedia: Media[] = [];
-  private storageService = inject(StorageService);
+  private database = inject(DatabaseService);
 
-  media = signal<Media[]>([]);
-
-  constructor() {
-    const storedMedia = this.storageService.getItem(MEDIA_STORAGE_KEY);
-    if (storedMedia) {
-        const parsedMedia = JSON.parse(storedMedia, (key, value) => {
-            if (key === 'timestamp' && typeof value === 'string') {
-                return new Date(value);
-            }
-            return value;
-        });
-        // FIX: Cast the parsed data from localStorage to ensure the signal has the correct type,
-        // which resolves downstream type inference errors.
-        this.media.set(parsedMedia as Media[]);
-    } else {
-        this.media.set(this.mockMedia);
-    }
-
-    effect(() => {
-        this.storageService.setItem(MEDIA_STORAGE_KEY, JSON.stringify(this.media()));
-    });
-  }
+  media = computed(() => this.database.state().media);
 
   getGenres(): string[] {
-    // FIX: Use flatMap to correctly flatten the array of genres and ensure strong typing.
-    const allGenres = this.media().flatMap(m => m.genre || []);
+    // FIX: Replaced flatMap with map().flat() to resolve a TypeScript type inference issue.
+    const allGenres = this.media().map((m: Media) => m.genre || []).flat();
     return [...new Set(allGenres)].sort();
   }
 
   getAudioLanguages(): string[] {
-    // FIX: Use flatMap to correctly flatten the array of languages and ensure strong typing.
-    const allLanguages = this.media().flatMap(m => m.audioLanguages || []);
+    // FIX: Replaced flatMap with map().flat() to resolve a TypeScript type inference issue.
+    const allLanguages = this.media().map((m: Media) => m.audioLanguages || []).flat();
     return [...new Set(allLanguages)].sort();
   }
   
   getSubtitleLanguages(): string[] {
-    // FIX: Use flatMap to correctly flatten the array of languages and ensure strong typing.
-    const allLanguages = this.media().flatMap(m => m.subtitleLanguages || []);
+    // FIX: Replaced flatMap with map().flat() to resolve a TypeScript type inference issue.
+    const allLanguages = this.media().map((m: Media) => m.subtitleLanguages || []).flat();
     return [...new Set(allLanguages)].sort();
   }
 
@@ -64,58 +41,69 @@ export class MovieService {
       ...mediaData,
       comments: []
     };
-    this.media.update(media => [...media, newMedia]);
+    this.database.state.update(state => ({ ...state, media: [...state.media, newMedia]}));
   }
 
   updateMedia(id: number, mediaData: Partial<Omit<Media, 'id' | 'comments' | 'ratings'>>) {
-    this.media.update(media => 
-      media.map(m => m.id === id ? { ...m, ...mediaData } : m)
-    );
+    this.database.state.update(state => ({
+      ...state,
+      media: state.media.map(m => m.id === id ? { ...m, ...mediaData } : m)
+    }));
   }
 
   deleteMedia(id: number) {
-    this.media.update(media => media.filter(m => m.id !== id));
+    this.database.state.update(state => ({...state, media: state.media.filter(m => m.id !== id)}));
   }
 
   addComment(mediaId: number, username: string, text: string) {
-    this.media.update(media => media.map(m => {
-      if (m.id === mediaId) {
-        const newComment: Comment = { username, text, timestamp: new Date() };
-        return { ...m, comments: [newComment, ...(m.comments || [])] };
-      }
-      return m;
+    this.database.state.update(state => ({
+      ...state,
+      media: state.media.map(m => {
+        if (m.id === mediaId) {
+          const newComment: Comment = { username, text, timestamp: new Date() };
+          return { ...m, comments: [newComment, ...(m.comments || [])] };
+        }
+        return m;
+      })
     }));
   }
 
   editComment(mediaId: number, timestamp: Date, newText: string) {
-    this.media.update(media => media.map(m => {
-      if (m.id === mediaId) {
-        return { 
-          ...m, 
-          comments: m.comments.map(c => 
-            new Date(c.timestamp).getTime() === timestamp.getTime() ? { ...c, text: newText } : c
-          ) 
-        };
-      }
-      return m;
+    this.database.state.update(state => ({
+      ...state,
+      media: state.media.map(m => {
+        if (m.id === mediaId) {
+          return { 
+            ...m, 
+            comments: m.comments.map(c => 
+              new Date(c.timestamp).getTime() === timestamp.getTime() ? { ...c, text: newText } : c
+            ) 
+          };
+        }
+        return m;
+      })
     }));
   }
 
   deleteComment(mediaId: number, timestamp: Date) {
-    this.media.update(media => media.map(m => {
-      if (m.id === mediaId) {
-        return { 
-          ...m, 
-          comments: m.comments.filter(c => new Date(c.timestamp).getTime() !== timestamp.getTime()) 
-        };
-      }
-      return m;
+    this.database.state.update(state => ({
+      ...state,
+      media: state.media.map(m => {
+        if (m.id === mediaId) {
+          return { 
+            ...m, 
+            comments: m.comments.filter(c => new Date(c.timestamp).getTime() !== timestamp.getTime()) 
+          };
+        }
+        return m;
+      })
     }));
   }
 
   rateMedia(mediaId: number, userId: number, rating: number) {
-    this.media.update(media =>
-      media.map(m => {
+    this.database.state.update(state => ({
+      ...state,
+      media: state.media.map(m => {
         if (m.id === mediaId) {
           const newRatings = m.ratings ? [...m.ratings] : [];
           const userRatingIndex = newRatings.findIndex(r => r.userId === userId);
@@ -131,6 +119,6 @@ export class MovieService {
         }
         return m;
       })
-    );
+    }));
   }
 }

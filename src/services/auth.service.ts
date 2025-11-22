@@ -2,9 +2,8 @@ import { Injectable, signal, inject, computed, Signal, effect } from '@angular/c
 import { User, WatchedItem, PendingUser } from '../shared/models/user.model';
 import { Router } from '@angular/router';
 import { StorageService } from './storage.service';
+import { DatabaseService } from './database.service';
 
-const USERS_STORAGE_KEY = 'yume_tv_users';
-const PENDING_USERS_STORAGE_KEY = 'yume_tv_pending_users';
 const CURRENT_USER_STORAGE_KEY = 'yume_tv_currentUser';
 const RECENTLY_WATCHED_LIMIT = 24;
 
@@ -12,9 +11,10 @@ const RECENTLY_WATCHED_LIMIT = 24;
 export class AuthService {
   // NOTE: In a real-world application, passwords should be securely hashed.
   // This implementation uses plaintext passwords for demonstration purposes.
+  private database = inject(DatabaseService);
 
-  private users = signal<User[]>([]);
-  private pendingUsers = signal<PendingUser[]>([]);
+  private users = computed(() => this.database.state().users);
+  private pendingUsers = computed(() => this.database.state().pendingUsers);
   currentUser = signal<User | null>(null);
 
   private router: Router = inject(Router);
@@ -23,13 +23,7 @@ export class AuthService {
   constructor() {
     this.initializeStateFromStorage();
     
-    // Persist users and pending users to storage on change
-    effect(() => {
-      this.storageService.setItem(USERS_STORAGE_KEY, JSON.stringify(this.users()));
-    });
-    effect(() => {
-      this.storageService.setItem(PENDING_USERS_STORAGE_KEY, JSON.stringify(this.pendingUsers()));
-    });
+    // Persist current logged-in user (session) to storage on change
     effect(() => {
        const user = this.currentUser();
        if (user) {
@@ -41,16 +35,7 @@ export class AuthService {
   }
 
   private initializeStateFromStorage() {
-    const storedUsers = this.storageService.getItem(USERS_STORAGE_KEY);
-    if (storedUsers) {
-      this.users.set(JSON.parse(storedUsers, this.jsonDateReviver) as User[]);
-    }
-
-    const storedPendingUsers = this.storageService.getItem(PENDING_USERS_STORAGE_KEY);
-    if (storedPendingUsers) {
-      this.pendingUsers.set(JSON.parse(storedPendingUsers, this.jsonDateReviver) as PendingUser[]);
-    }
-
+    // Only the current user session is stored in the browser's cookies
     const storedCurrentUser = this.storageService.getItem(CURRENT_USER_STORAGE_KEY);
     if (storedCurrentUser) {
         this.currentUser.set(JSON.parse(storedCurrentUser, this.jsonDateReviver) as User);
@@ -68,6 +53,21 @@ export class AuthService {
     return value;
   }
   
+  private getAppConfig() {
+    const defaultConfig = {
+      ADMIN_USER: 'admin',
+      ADMIN_PASSWORD: 'password',
+      RESEND_API_KEY: '',
+      RESEND_FROM_EMAIL: 'noreply@example.com'
+    };
+    const globalConfig = (window as any).YUME_TV_CONFIG;
+    if (globalConfig) {
+      return { ...defaultConfig, ...globalConfig };
+    }
+    console.warn('env.js not found or YUME_TV_CONFIG not set. Using default development values. Please see README.md for production setup.');
+    return defaultConfig;
+  }
+
   getUsers(): Signal<User[]> {
       return this.users.asReadonly();
   }
@@ -78,10 +78,11 @@ export class AuthService {
 
   login(username: string, password: string): { success: boolean, message: string } {
     const trimmedUsername = username.trim();
-
+    const config = this.getAppConfig();
+    
     // 1. Check for Super Admin from environment variables
-    const adminUser = process.env.ADMIN_USER || 'admin';
-    const adminPass = process.env.ADMIN_PASSWORD || 'password';
+    const adminUser = config.ADMIN_USER;
+    const adminPass = config.ADMIN_PASSWORD;
     if (trimmedUsername === adminUser && password === adminPass) {
       const superAdmin: User = {
         id: 0,
@@ -135,27 +136,89 @@ export class AuthService {
         tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
     };
     
-    this.pendingUsers.update(current => [...current, newPendingUser]);
+    this.database.state.update(state => ({ ...state, pendingUsers: [...state.pendingUsers, newPendingUser]}));
     await this.sendVerificationEmail(newPendingUser);
       
     return { success: true, message: 'registerSuccessPending' };
   }
 
+  private simulateVerificationEmail(user: PendingUser): void {
+    const verificationLink = `${window.location.origin}/#/verify-email/${user.verificationToken}`;
+    console.warn(`
+      ================================================================================
+      [EMAIL SIMULATION] - CONFIGURE env.js FOR REAL EMAILS
+      This is a fallback because Resend API key is not configured in env.js.
+      
+      Verification link for ${user.email}:
+      ${verificationLink}
+      ================================================================================
+    `);
+  }
+
   private async sendVerificationEmail(user: PendingUser): Promise<void> {
+    const config = this.getAppConfig();
+    const apiKey = config.RESEND_API_KEY;
+    const fromEmail = config.RESEND_FROM_EMAIL;
+    
+    if (!apiKey || apiKey.startsWith('re_') === false || !fromEmail || fromEmail === 'noreply@example.com') {
+      this.simulateVerificationEmail(user);
+      return;
+    }
+
     const verificationLink = `${window.location.origin}/#/verify-email/${user.verificationToken}`;
     
-    // --- REAL EMAIL INTEGRATION POINT ---
-    // In a production app, you would replace the console.log with a call
-    // to your email service API (e.g., SendGrid, Mailgun, AWS SES).
-    // See README.md for a detailed example.
-    console.log(`
-      ===============================================================
-      [EMAIL SIMULATION] Verification link for ${user.email}:
-      ${verificationLink}
-      ===============================================================
-    `);
-    
-    return Promise.resolve();
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verify Your Email for Yume TV</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; background-color: #0B1120; color: #F1F5F9; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 20px auto; background-color: #1E293B; border-radius: 8px; border: 1px solid #334155; padding: 40px; text-align: center;">
+          <h1 style="color: #3B82F6; font-size: 28px; margin-top: 0;">Welcome to Yume TV!</h1>
+          <p style="font-size: 16px; color: #94A3B8; line-height: 1.5;">
+            Thanks for signing up! Please click the button below to verify your email address and complete your registration.
+          </p>
+          <a href="${verificationLink}" target="_blank" style="display: inline-block; background-color: #3B82F6; color: #ffffff; padding: 15px 25px; margin: 25px 0; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            Verify Email Address
+          </a>
+          <p style="font-size: 14px; color: #475569; line-height: 1.5;">
+            If you did not create an account, no further action is required.<br>
+            This link will expire in 24 hours.
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [user.email],
+          subject: 'Verify Your Email Address for Yume TV',
+          html: emailHtml
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to send verification email via Resend:', errorData);
+        this.simulateVerificationEmail(user); // Fallback for safety
+      } else {
+        console.log(`Production verification email successfully sent to ${user.email} via Resend.`);
+      }
+    } catch (error) {
+      console.error('Network or other error sending verification email:', error);
+      this.simulateVerificationEmail(user); // Fallback for safety
+    }
   }
 
   async resendVerificationEmail(email: string): Promise<{ success: boolean, message: string }> {
@@ -167,11 +230,18 @@ export class AuthService {
     }
     
     // Refresh token and expiry
-    pendingUser.verificationToken = crypto.randomUUID();
-    pendingUser.tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    this.pendingUsers.update(users => users.map(u => u.email === trimmedEmail ? pendingUser : u));
+    const updatedPendingUser = {
+      ...pendingUser,
+      verificationToken: crypto.randomUUID(),
+      tokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+    };
 
-    await this.sendVerificationEmail(pendingUser);
+    this.database.state.update(state => ({
+      ...state,
+      pendingUsers: state.pendingUsers.map(u => u.email === trimmedEmail ? updatedPendingUser : u)
+    }));
+    
+    await this.sendVerificationEmail(updatedPendingUser);
     return { success: true, message: 'verificationEmailResent' };
   }
 
@@ -195,8 +265,11 @@ export class AuthService {
       recentlyWatched: []
     };
     
-    this.users.update(currentUsers => [...currentUsers, newUser]);
-    this.pendingUsers.update(current => current.filter(u => u.verificationToken !== token));
+    this.database.state.update(state => ({
+        ...state,
+        users: [...state.users, newUser],
+        pendingUsers: state.pendingUsers.filter(u => u.verificationToken !== token)
+    }));
 
     return { success: true, message: isFirstUser ? 'verifySuccessAdmin' : 'verifySuccessUser' };
   }
@@ -207,9 +280,11 @@ export class AuthService {
   }
 
   updateUserRole(userId: number, role: 'user' | 'mod' | 'admin') {
-    this.users.update(users => 
-      users.map(u => u.id === userId ? { ...u, role } : u)
-    );
+    this.database.state.update(state => ({
+      ...state,
+      users: state.users.map(u => u.id === userId ? { ...u, role } : u)
+    }));
+
     if (this.currentUser()?.id === userId) {
         this.currentUser.update(u => u ? {...u, role} : null);
     }
@@ -226,7 +301,8 @@ export class AuthService {
   }
   
   adminUpdateUser(userId: number, updates: { username?: string; email?: string; password?: string; profilePictureUrl?: string }): { success: boolean; message: string } {
-    const userToUpdate = this.users().find(u => u.id === userId);
+    const allUsers = this.users();
+    const userToUpdate = allUsers.find(u => u.id === userId);
     if (!userToUpdate) {
         return { success: false, message: 'errorUserNotFound' };
     }
@@ -236,7 +312,7 @@ export class AuthService {
 
     // Check username change
     if (updates.username && updates.username.trim() && updates.username !== userToUpdate.username) {
-        if (this.users().some(u => u.username.toLowerCase() === updates.username!.toLowerCase() && u.id !== userId)) {
+        if (allUsers.some(u => u.username.toLowerCase() === updates.username!.toLowerCase() && u.id !== userId)) {
             return { success: false, message: 'errorUsernameTaken' };
         }
         updatedUser.username = updates.username.trim();
@@ -245,7 +321,7 @@ export class AuthService {
 
     // Check email change
     if (updates.email && updates.email.trim() && updates.email !== userToUpdate.email) {
-        if (this.users().some(u => u.email.toLowerCase() === updates.email!.toLowerCase() && u.id !== userId)) {
+        if (allUsers.some(u => u.email.toLowerCase() === updates.email!.toLowerCase() && u.id !== userId)) {
             return { success: false, message: 'errorEmailExists' };
         }
         updatedUser.email = updates.email.trim();
@@ -265,7 +341,11 @@ export class AuthService {
     }
     
     if (needsUpdate) {
-        this.users.update(users => users.map(u => u.id === userId ? updatedUser : u));
+        this.database.state.update(state => ({
+          ...state,
+          users: state.users.map(u => u.id === userId ? updatedUser : u)
+        }));
+        
         // If the admin is editing their own account (not the super admin)
         if (this.currentUser()?.id === userId) {
           this.currentUser.set(updatedUser);
@@ -315,9 +395,10 @@ export class AuthService {
       return { ...user, recentlyWatched: watched };
     };
 
-    this.users.update(currentUsers =>
-      currentUsers.map(u => u.id === currentUser.id ? updateUser(u)! : u)
-    );
+    this.database.state.update(state => ({
+      ...state,
+      users: state.users.map(u => u.id === currentUser.id ? updateUser(u)! : u)
+    }));
     
     this.currentUser.update(updateUser);
   }

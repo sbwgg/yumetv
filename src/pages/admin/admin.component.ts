@@ -245,14 +245,13 @@ export class AdminComponent {
   }
   
   saveSettings() {
-    this.settingsService.settings.update(settings => ({
-        ...settings,
+    this.settingsService.updateSettings({
         siteName: this.siteName(),
         maintenanceMode: {
             enabled: this.maintenanceEnabled(),
             message: this.maintenanceMessage()
         }
-    }));
+    });
     alert(this.translationService.translate('alertSettingsSaved'));
   }
 }

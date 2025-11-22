@@ -1,82 +1,39 @@
-
-
-import { Injectable, signal, effect, inject } from '@angular/core';
-import { StorageService } from './storage.service';
-
-const SETTINGS_STORAGE_KEY = 'yume_tv_settings';
-
-interface MaintenanceMode {
-  enabled: boolean;
-  message: string;
-}
-
-interface PlayerSettings {
-  autoPlay: boolean;
-  autoNext: boolean;
-}
-
-interface Settings {
-  maintenanceMode: MaintenanceMode;
-  player: PlayerSettings;
-  siteName: string;
-}
-
-const DEFAULT_SETTINGS: Settings = {
-  maintenanceMode: {
-    enabled: false,
-    message: 'Our services are temporarily unavailable as we\'re working on making things even better.'
-  },
-  player: {
-    autoPlay: true,
-    autoNext: true,
-  },
-  siteName: 'Yume TV'
-};
+import { Injectable, computed, inject } from '@angular/core';
+import { DatabaseService } from './database.service';
+import { MaintenanceMode, PlayerSettings, Settings } from '../shared/models/settings.model';
 
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
-  settings = signal<Settings>(DEFAULT_SETTINGS);
-  private storageService = inject(StorageService);
-  
-  constructor() {
-      const storedSettings = this.storageService.getItem(SETTINGS_STORAGE_KEY);
-      if (storedSettings) {
-        try {
-          const loadedSettings = JSON.parse(storedSettings);
-          // Deep merge to ensure new default properties are added if they don't exist in storage
-          const mergedSettings: Settings = {
-            ...DEFAULT_SETTINGS,
-            ...loadedSettings,
-            maintenanceMode: {
-              ...DEFAULT_SETTINGS.maintenanceMode,
-              ...(loadedSettings.maintenanceMode || {}),
-            },
-            player: {
-              ...DEFAULT_SETTINGS.player,
-              ...(loadedSettings.player || {}),
-            },
-          };
-          this.settings.set(mergedSettings);
-        } catch (e) {
-          console.error("Failed to parse settings from storage", e);
-          this.settings.set(DEFAULT_SETTINGS);
-        }
-      }
+  private database = inject(DatabaseService);
 
-      effect(() => {
-          this.storageService.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings()));
-      });
-  }
+  settings = computed(() => this.database.state().settings);
 
   setMaintenanceMode(maintenanceMode: MaintenanceMode) {
-    this.settings.update(settings => ({ ...settings, maintenanceMode }));
+    this.database.state.update(state => ({ 
+      ...state, 
+      settings: { ...state.settings, maintenanceMode }
+    }));
   }
 
   updatePlayerSettings(playerSettings: Partial<PlayerSettings>) {
-    this.settings.update(settings => ({
-      ...settings,
-      player: { ...settings.player, ...playerSettings }
+    this.database.state.update(state => ({
+      ...state,
+      settings: { 
+        ...state.settings, 
+        player: { ...state.settings.player, ...playerSettings } 
+      }
     }));
+  }
+
+  updateSettings(updates: { siteName: string, maintenanceMode: MaintenanceMode }): void {
+      this.database.state.update(state => ({
+          ...state,
+          settings: {
+              ...state.settings,
+              siteName: updates.siteName,
+              maintenanceMode: updates.maintenanceMode
+          }
+      }));
   }
 }
