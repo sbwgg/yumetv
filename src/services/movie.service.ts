@@ -1,7 +1,10 @@
 
 
-import { Injectable, signal, effect } from '@angular/core';
+
+
+import { Injectable, signal, effect, inject } from '@angular/core';
 import { Media, Comment, Rating } from '../shared/models/movie.model';
+import { StorageService } from './storage.service';
 
 const MEDIA_STORAGE_KEY = 'yume_tv_media';
 const AVAILABLE_LANGUAGES = [
@@ -12,11 +15,12 @@ const AVAILABLE_LANGUAGES = [
 @Injectable({ providedIn: 'root' })
 export class MovieService {
   private mockMedia: Media[] = [];
+  private storageService = inject(StorageService);
 
   media = signal<Media[]>([]);
 
   constructor() {
-    const storedMedia = localStorage.getItem(MEDIA_STORAGE_KEY);
+    const storedMedia = this.storageService.getItem(MEDIA_STORAGE_KEY);
     if (storedMedia) {
         const parsedMedia = JSON.parse(storedMedia, (key, value) => {
             if (key === 'timestamp' && typeof value === 'string') {
@@ -32,25 +36,25 @@ export class MovieService {
     }
 
     effect(() => {
-        localStorage.setItem(MEDIA_STORAGE_KEY, JSON.stringify(this.media()));
+        this.storageService.setItem(MEDIA_STORAGE_KEY, JSON.stringify(this.media()));
     });
   }
 
   getGenres(): string[] {
-    // FIX: Use flatMap to correctly flatten the array of genres. Using map would create a nested array (string[][]), causing a type error.
-    const allGenres = this.media().flatMap(m => m.genre || []);
+    // FIX: Use map().flat() to correctly flatten the array of genres. This avoids potential type inference issues with flatMap.
+    const allGenres = this.media().map(m => m.genre || []).flat();
     return [...new Set(allGenres)].sort();
   }
 
   getAudioLanguages(): string[] {
-    // FIX: Use flatMap to correctly flatten the array of languages. Using map would create a nested array (string[][]), causing a type error.
-    const allLanguages = this.media().flatMap(m => m.audioLanguages || []);
+    // FIX: Use map().flat() to correctly flatten the array of languages. This avoids potential type inference issues with flatMap.
+    const allLanguages = this.media().map(m => m.audioLanguages || []).flat();
     return [...new Set(allLanguages)].sort();
   }
   
   getSubtitleLanguages(): string[] {
-    // FIX: Use flatMap to correctly flatten the array of languages. Using map would create a nested array (string[][]), causing a type error.
-    const allLanguages = this.media().flatMap(m => m.subtitleLanguages || []);
+    // FIX: Use map().flat() to correctly flatten the array of languages. This avoids potential type inference issues with flatMap.
+    const allLanguages = this.media().map(m => m.subtitleLanguages || []).flat();
     return [...new Set(allLanguages)].sort();
   }
 

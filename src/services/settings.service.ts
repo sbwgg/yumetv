@@ -1,5 +1,7 @@
 
-import { Injectable, signal, effect } from '@angular/core';
+
+import { Injectable, signal, effect, inject } from '@angular/core';
+import { StorageService } from './storage.service';
 
 const SETTINGS_STORAGE_KEY = 'yume_tv_settings';
 
@@ -35,9 +37,10 @@ const DEFAULT_SETTINGS: Settings = {
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   settings = signal<Settings>(DEFAULT_SETTINGS);
+  private storageService = inject(StorageService);
   
   constructor() {
-      const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      const storedSettings = this.storageService.getItem(SETTINGS_STORAGE_KEY);
       if (storedSettings) {
         try {
           const loadedSettings = JSON.parse(storedSettings);
@@ -56,13 +59,13 @@ export class SettingsService {
           };
           this.settings.set(mergedSettings);
         } catch (e) {
-          console.error("Failed to parse settings from localStorage", e);
+          console.error("Failed to parse settings from storage", e);
           this.settings.set(DEFAULT_SETTINGS);
         }
       }
 
       effect(() => {
-          localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings()));
+          this.storageService.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(this.settings()));
       });
   }
 

@@ -1,6 +1,7 @@
 import { Injectable, signal, inject, computed, Signal, effect } from '@angular/core';
 import { User, WatchedItem } from '../shared/models/user.model';
 import { Router } from '@angular/router';
+import { StorageService } from './storage.service';
 
 const USERS_STORAGE_KEY = 'yume_tv_users';
 const CURRENT_USER_STORAGE_KEY = 'yume_tv_currentUser';
@@ -15,26 +16,27 @@ export class AuthService {
   currentUser = signal<User | null>(null);
 
   private router: Router = inject(Router);
+  private storageService = inject(StorageService);
 
   constructor() {
     this.initializeStateFromStorage();
     
     effect(() => {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(this.users()));
+      this.storageService.setItem(USERS_STORAGE_KEY, JSON.stringify(this.users()));
     });
     
     effect(() => {
        const user = this.currentUser();
        if (user) {
-         localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
+         this.storageService.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
        } else {
-         localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+         this.storageService.removeItem(CURRENT_USER_STORAGE_KEY);
        }
     });
   }
 
   private initializeStateFromStorage() {
-    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    const storedUsers = this.storageService.getItem(USERS_STORAGE_KEY);
     if (storedUsers) {
       // FIX: Cast parsed data to User[] to ensure correct typing for the signal.
       this.users.set(JSON.parse(storedUsers, (key, value) => {
@@ -47,7 +49,7 @@ export class AuthService {
       this.users.set([]);
     }
 
-    const storedCurrentUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    const storedCurrentUser = this.storageService.getItem(CURRENT_USER_STORAGE_KEY);
     if (storedCurrentUser) {
         // FIX: Cast parsed data to User to ensure correct typing for the signal.
         this.currentUser.set(JSON.parse(storedCurrentUser, (key, value) => {

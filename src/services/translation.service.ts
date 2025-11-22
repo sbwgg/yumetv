@@ -1,4 +1,5 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, inject } from '@angular/core';
+import { StorageService } from './storage.service';
 
 export type Language = 'en' | 'lv';
 
@@ -396,15 +397,16 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
 @Injectable({ providedIn: 'root' })
 export class TranslationService {
   language = signal<Language>('en');
+  private storageService = inject(StorageService);
 
   constructor() {
-    const storedLang = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    const storedLang = this.storageService.getItem(LANGUAGE_STORAGE_KEY);
     if (storedLang && (storedLang === 'en' || storedLang === 'lv')) {
       this.language.set(storedLang);
     }
 
     effect(() => {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, this.language());
+      this.storageService.setItem(LANGUAGE_STORAGE_KEY, this.language());
     });
   }
 
