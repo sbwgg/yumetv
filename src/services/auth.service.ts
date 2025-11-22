@@ -1,7 +1,3 @@
-
-
-
-
 import { Injectable, signal, inject, computed, Signal, effect } from '@angular/core';
 import { User, WatchedItem } from '../shared/models/user.model';
 import { Router } from '@angular/router';
@@ -40,24 +36,26 @@ export class AuthService {
   private initializeStateFromStorage() {
     const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
     if (storedUsers) {
+      // FIX: Cast parsed data to User[] to ensure correct typing for the signal.
       this.users.set(JSON.parse(storedUsers, (key, value) => {
         if (key === 'watchedAt' && typeof value === 'string') {
           return new Date(value);
         }
         return value;
-      }));
+      }) as User[]);
     } else {
       this.users.set([]);
     }
 
     const storedCurrentUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
     if (storedCurrentUser) {
+        // FIX: Cast parsed data to User to ensure correct typing for the signal.
         this.currentUser.set(JSON.parse(storedCurrentUser, (key, value) => {
            if (key === 'watchedAt' && typeof value === 'string') {
             return new Date(value);
           }
           return value;
-        }));
+        }) as User);
     }
   }
   

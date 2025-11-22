@@ -33,6 +33,16 @@ export class MediaCardComponent {
     return `S${season} E${episode}`;
   });
 
+  averageRating = computed(() => {
+    const ratings = this.media().ratings;
+    if (!ratings || ratings.length === 0) {
+      return 0;
+    }
+    const sum = ratings.reduce((acc, curr) => acc + curr.rating, 0);
+    const average = sum / ratings.length;
+    return Math.round(average * 10) / 10; // Round to one decimal place
+  });
+
   private languageToCountryCode: { [key: string]: string } = {
     'English': 'gb',
     'Spanish': 'es',

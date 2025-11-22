@@ -16,6 +16,11 @@ export interface Season {
   episodes: Episode[];
 }
 
+export interface Rating {
+  userId: number;
+  rating: number; // e.g., 1-5
+}
+
 export interface Media {
   id: number;
   title: string;
@@ -34,4 +39,5 @@ export interface Media {
   sourceUrl?: string; // For movies
   seasons?: Season[]; // For TV shows
   tags?: string[]; // e.g., 'New', 'HBO', '4K'
+  ratings?: Rating[];
 }

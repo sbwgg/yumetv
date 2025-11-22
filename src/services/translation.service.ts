@@ -190,6 +190,12 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     profileRecentlyWatched: 'Recently Watched',
     profileNoRecentWatches: "hasn't watched anything recently.",
     profileActivity: 'Activity',
+    // Ratings
+    ratingFrom: 'from',
+    ratingSingular: 'rating',
+    ratingPlural: 'ratings',
+    yourRating: 'Your Rating:',
+    loginToRate: 'to rate this title.',
   },
   lv: {
     // Header
@@ -376,6 +382,12 @@ const translations: { [lang in Language]: { [key: string]: string } } = {
     profileRecentlyWatched: 'Nesen Skatītie',
     profileNoRecentWatches: 'nesen neko nav skatījies.',
     profileActivity: 'Aktivitāte',
+    // Ratings
+    ratingFrom: 'no',
+    ratingSingular: 'vērtējuma',
+    ratingPlural: 'vērtējumiem',
+    yourRating: 'Tavs Vērtējums:',
+    loginToRate: 'lai novērtētu šo saturu.',
   },
 };
 

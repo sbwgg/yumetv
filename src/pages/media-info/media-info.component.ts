@@ -1,4 +1,5 @@
 
+
 import { Component, ChangeDetectionStrategy, EventEmitter, Output, input, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,11 +10,12 @@ import { MovieService } from '../../services/movie.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { StarRatingComponent } from '../../components/star-rating/star-rating.component';
 
 @Component({
   selector: 'app-media-info',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, StarRatingComponent],
   templateUrl: './media-info.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -75,6 +77,32 @@ export class MediaInfoComponent {
     const user = this.authService.currentUser();
     return !!user && (user.role === 'admin' || user.role === 'mod');
   });
+
+  averageRating = computed(() => {
+    const ratings = this.media()?.ratings;
+    if (!ratings || ratings.length === 0) {
+      return 0;
+    }
+    const sum = ratings.reduce((acc, curr) => acc + curr.rating, 0);
+    return sum / ratings.length;
+  });
+
+  ratingCount = computed(() => this.media()?.ratings?.length || 0);
+
+  userRating = computed(() => {
+    const user = this.currentUser();
+    if (!user) return 0;
+    const ratings = this.media()?.ratings;
+    return ratings?.find(r => r.userId === user.id)?.rating || 0;
+  });
+
+  handleRatingChange(newRating: number) {
+    const user = this.currentUser();
+    const media = this.media();
+    if (user && media) {
+      this.movieService.rateMedia(media.id, user.id, newRating);
+    }
+  }
   
   addComment() {
     const user = this.authService.currentUser();

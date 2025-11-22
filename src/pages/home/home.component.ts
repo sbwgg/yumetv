@@ -1,6 +1,4 @@
 
-
-
 import { Component, ChangeDetectionStrategy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -73,8 +71,8 @@ export class HomeComponent {
     // Get the most recent watch entry for each unique media ID
     const latestWatchedByMediaId = new Map<number, WatchedItem>();
     [...user.recentlyWatched]
-      // FIX: Wrap watchedAt in new Date() to handle both Date objects and date strings from localStorage.
-      .sort((a, b) => new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime())
+      // FIX: Call getTime() directly on the Date object to resolve the arithmetic operation error.
+      .sort((a: WatchedItem, b: WatchedItem) => b.watchedAt.getTime() - a.watchedAt.getTime())
       .forEach(item => {
         if (!latestWatchedByMediaId.has(item.mediaId)) {
           latestWatchedByMediaId.set(item.mediaId, item);

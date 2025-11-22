@@ -1,9 +1,6 @@
 
-
-
-
 import { Injectable, signal, effect } from '@angular/core';
-import { Media, Comment } from '../shared/models/movie.model';
+import { Media, Comment, Rating } from '../shared/models/movie.model';
 
 const MEDIA_STORAGE_KEY = 'yume_tv_media';
 const AVAILABLE_LANGUAGES = [
@@ -26,7 +23,9 @@ export class MovieService {
             }
             return value;
         });
-        this.media.set(parsedMedia);
+        // FIX: Cast the parsed data from localStorage to ensure the signal has the correct type,
+        // which resolves downstream type inference errors.
+        this.media.set(parsedMedia as Media[]);
     } else {
         this.media.set(this.mockMedia);
     }
@@ -37,21 +36,21 @@ export class MovieService {
   }
 
   getGenres(): string[] {
-    // FIX: Explicitly type 'm' as Media and handle potentially undefined arrays to ensure correct type inference.
-    const allGenres = this.media().flatMap((m: Media) => m.genre || []);
-    return Array.from(new Set(allGenres)).sort();
+    // FIX: Use flatMap() to correctly flatten the array of genres and ensure proper type inference.
+    const allGenres = this.media().flatMap(m => m.genre || []);
+    return [...new Set(allGenres)].sort();
   }
 
   getAudioLanguages(): string[] {
-    // FIX: Explicitly type 'm' as Media and handle potentially undefined arrays to ensure correct type inference.
-    const allLanguages = this.media().flatMap((m: Media) => m.audioLanguages || []);
-    return Array.from(new Set(allLanguages)).sort();
+    // FIX: Use flatMap() to correctly flatten the array of languages and ensure proper type inference.
+    const allLanguages = this.media().flatMap(m => m.audioLanguages || []);
+    return [...new Set(allLanguages)].sort();
   }
   
   getSubtitleLanguages(): string[] {
-    // FIX: Explicitly type 'm' as Media and handle potentially undefined arrays to ensure correct type inference.
-    const allLanguages = this.media().flatMap((m: Media) => m.subtitleLanguages || []);
-    return Array.from(new Set(allLanguages)).sort();
+    // FIX: Use flatMap() to correctly flatten the array of languages and ensure proper type inference.
+    const allLanguages = this.media().flatMap(m => m.subtitleLanguages || []);
+    return [...new Set(allLanguages)].sort();
   }
 
   getAvailableLanguages(): string[] {
@@ -67,7 +66,7 @@ export class MovieService {
     this.media.update(media => [...media, newMedia]);
   }
 
-  updateMedia(id: number, mediaData: Partial<Omit<Media, 'id' | 'comments'>>) {
+  updateMedia(id: number, mediaData: Partial<Omit<Media, 'id' | 'comments' | 'ratings'>>) {
     this.media.update(media => 
       media.map(m => m.id === id ? { ...m, ...mediaData } : m)
     );
@@ -111,5 +110,26 @@ export class MovieService {
       }
       return m;
     }));
+  }
+
+  rateMedia(mediaId: number, userId: number, rating: number) {
+    this.media.update(media =>
+      media.map(m => {
+        if (m.id === mediaId) {
+          const newRatings = m.ratings ? [...m.ratings] : [];
+          const userRatingIndex = newRatings.findIndex(r => r.userId === userId);
+
+          if (userRatingIndex > -1) {
+            // Update existing rating
+            newRatings[userRatingIndex] = { userId, rating };
+          } else {
+            // Add new rating
+            newRatings.push({ userId, rating });
+          }
+          return { ...m, ratings: newRatings };
+        }
+        return m;
+      })
+    );
   }
 }

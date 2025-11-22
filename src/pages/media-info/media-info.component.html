@@ -1,4 +1,5 @@
 
+
 <div class="container mx-auto px-0 md:px-4 py-8">
   @if (media(); as media) {
     <div class="shadow-2xl w-full bg-surface rounded-lg max-w-6xl mx-auto overflow-hidden">
@@ -18,6 +19,34 @@
             <span class="border-l border-border h-4"></span>
             <span class="bg-surface-light text-text-primary px-2 py-1 text-xs font-bold rounded">{{ media.ageRating }}</span>
           </div>
+
+          <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 mb-4">
+            @if(ratingCount() > 0) {
+              <div class="flex items-center gap-2">
+                <app-star-rating [rating]="averageRating()" />
+                <span class="text-text-secondary text-sm">
+                  {{ averageRating().toFixed(1) }} {{ 'ratingFrom' | translate }} {{ ratingCount() }} {{ (ratingCount() === 1 ? 'ratingSingular' : 'ratingPlural') | translate }}
+                </span>
+              </div>
+            }
+
+            <div class="border-t md:border-t-0 md:border-l border-border h-px md:h-6 my-2 md:my-0"></div>
+
+            @if (currentUser(); as user) {
+              <div class="flex items-center gap-2">
+                <span class="text-text-secondary text-sm font-semibold">{{ 'yourRating' | translate }}</span>
+                <app-star-rating 
+                  [rating]="userRating()" 
+                  [isEditable]="true" 
+                  (ratingChange)="handleRatingChange($event)" />
+              </div>
+            } @else {
+              <p class="text-text-secondary text-sm">
+                <a routerLink="/login" class="text-primary hover:underline">{{ 'login' | translate }}</a> {{ 'loginToRate' | translate }}
+              </p>
+            }
+          </div>
+
           <p class="text-text-secondary mb-6 max-w-4xl">{{ media.description }}</p>
 
           <div class="flex flex-wrap gap-2 mb-6">
