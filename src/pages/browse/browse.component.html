@@ -1,0 +1,60 @@
+
+<div class="container mx-auto px-4 py-8">
+  <!-- Search and Filter Section -->
+  <div class="bg-surface p-6 rounded-lg mb-8 shadow-lg">
+    <h2 class="text-2xl font-bold mb-4 text-text-primary">{{ 'browse' | translate }} {{ 'allContent' | translate }}</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+       <input 
+        type="text" 
+        placeholder="{{ 'title' | translate }}..." 
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary w-full md:col-span-2 border border-transparent focus:border-primary">
+      <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
+        <option value="">{{ 'allTypes' | translate }}</option>
+        <option value="Movie">{{ 'movies' | translate }}</option>
+        <option value="TV Show">{{ 'tvShows' | translate }}</option>
+      </select>
+      <select [ngModel]="selectedGenre()" (ngModelChange)="selectedGenre.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
+        <option value="">{{ 'allGenres' | translate }}</option>
+        @for (genre of genres; track genre) {
+          <option [value]="genre">{{ genre }}</option>
+        }
+      </select>
+      <select [ngModel]="selectedYear()" (ngModelChange)="selectedYear.set($event ? +$event : null)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
+        <option value="">{{ 'allYears' | translate }}</option>
+        @for (year of years(); track year) {
+          <option [value]="year">{{ year }}</option>
+        }
+      </select>
+      <select [ngModel]="selectedAudioLang()" (ngModelChange)="selectedAudioLang.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
+        <option value="">{{ 'allAudio' | translate }}</option>
+        @for (lang of audioLanguages; track lang) {
+          <option [value]="lang">{{ lang }}</option>
+        }
+      </select>
+      <select [ngModel]="selectedSubtitleLang()" (ngModelChange)="selectedSubtitleLang.set($event)" class="bg-surface-light text-text-primary p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-primary border border-transparent focus:border-primary">
+        <option value="">{{ 'allSubtitles' | translate }}</option>
+        @for (lang of subtitleLanguages; track lang) {
+          <option [value]="lang">{{ lang }}</option>
+        }
+      </select>
+      <button (click)="clearFilters()" class="bg-surface-light/50 border border-border text-text-primary p-3 rounded-md hover:bg-surface-light transition-colors duration-200">
+        {{ 'clearFilters' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Media Grid -->
+  @if (filteredMedia().length > 0) {
+    <div class="grid gap-6 grid-cols-[repeat(auto-fill,minmax(160px,1fr))]">
+      @for (media of filteredMedia(); track media.id) {
+        <app-media-card [media]="media" />
+      }
+    </div>
+  } @else {
+    <div class="text-center py-20">
+      <p class="text-text-secondary text-2xl">{{ 'noResultsFound' | translate }}</p>
+    </div>
+  }
+</div>

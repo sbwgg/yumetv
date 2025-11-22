@@ -1,0 +1,78 @@
+
+<div class="flex items-center justify-center min-h-screen">
+  <div class="bg-surface p-8 rounded-lg shadow-2xl w-full max-w-md">
+    <h2 class="text-3xl font-bold text-center text-text-primary mb-6">{{ 'loginTo' | translate }} {{ settingsService.settings().siteName }}</h2>
+    
+    @if (isUnverified()) {
+      <div class="animate-fade-in">
+        <h3 class="text-xl font-semibold text-center text-amber-400 mb-2">{{ 'emailVerificationRequired' | translate }}</h3>
+        <p class="text-text-secondary text-center mb-4">{{ 'checkEmailToVerify' | translate }}</p>
+        
+        <div class="bg-surface-light p-4 rounded-lg">
+          <label for="resend-email" class="block text-text-secondary mb-2 text-sm">{{ 'resendVerificationEmail' | translate }}</label>
+          <div class="flex gap-2">
+            <input 
+              type="email" 
+              id="resend-email" 
+              name="resend-email"
+              [(ngModel)]="resendEmail"
+              required
+              class="w-full p-2 bg-surface border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="{{ 'email' | translate }}">
+            <button (click)="onResendVerification()" [disabled]="isLoading()" class="bg-primary text-white px-4 py-2 rounded-md font-bold hover:bg-blue-600 transition disabled:bg-slate-500">
+              {{ 'resend' | translate }}
+            </button>
+          </div>
+           @if (resendMessage(); as msg) {
+            <p class="text-sm mt-2" [class.text-green-400]="msg.type === 'success'" [class.text-red-400]="msg.type === 'error'">
+              {{ msg.text | translate }}
+            </p>
+          }
+        </div>
+
+        <button (click)="isUnverified.set(false)" class="w-full mt-6 text-primary hover:underline">
+          &larr; {{ 'backToLogin' | translate }}
+        </button>
+      </div>
+    } @else {
+      <form (ngSubmit)="onLogin()">
+        <div class="mb-4">
+          <label for="username" class="block text-text-secondary mb-2">{{ 'username' | translate }}</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username"
+            [(ngModel)]="username"
+            required
+            class="w-full p-3 bg-surface-light border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="e.g., admin">
+        </div>
+        <div class="mb-6">
+          <label for="password" class="block text-text-secondary mb-2">{{ 'password' | translate }}</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password"
+            [(ngModel)]="password"
+            required
+            class="w-full p-3 bg-surface-light border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="••••••••">
+        </div>
+        @if (errorMessage()) {
+          <div class="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-md relative mb-4" role="alert">
+            <span class="block sm:inline">{{ errorMessage()! | translate }}</span>
+            @if(isUnverified()) {
+              <button (click)="isUnverified.set(true)" class="underline ml-2">{{ 'resendVerification' | translate }}?</button>
+            }
+          </div>
+        }
+        <button type="submit" class="w-full bg-primary text-white py-3 rounded-md font-bold hover:bg-blue-600 transition-colors duration-300">
+          {{ 'login' | translate }}
+        </button>
+        <p class="text-center text-text-secondary mt-4">
+          {{ 'dontHaveAccount' | translate }} <a routerLink="/register" class="text-primary hover:underline">{{ 'registerHere' | translate }}</a>.
+        </p>
+      </form>
+    }
+  </div>
+</div>
