@@ -8,6 +8,7 @@ import { User } from '../../shared/models/user.model';
 import { Media } from '../../shared/models/movie.model';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { TranslationService } from '../../services/translation.service';
+import { EditUserModalComponent } from '../../components/edit-user-modal/edit-user-modal.component';
 
 const NO_POSTER_URL = 'https://via.placeholder.com/400x600/1E293B/FFFFFF?text=No+Poster';
 const NO_THUMBNAIL_URL = 'https://via.placeholder.com/400x225/1E293B/FFFFFF?text=No+Thumbnail';
@@ -16,7 +17,7 @@ const NO_EPISODE_THUMBNAIL_URL = 'https://via.placeholder.com/300x150/1E293B/FFF
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, EditUserModalComponent],
   templateUrl: './admin.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -32,6 +33,8 @@ export class AdminComponent {
   
   // User Management
   users = this.authService.getUsers();
+  showEditUserModal = signal(false);
+  selectedUserForEdit = signal<User | null>(null);
   
   // Content Management
   availableLanguages = this.movieService.getAvailableLanguages();
@@ -61,10 +64,36 @@ export class AdminComponent {
   maintenanceMessage = signal(this.settingsService.settings().maintenanceMode.message);
   siteName = signal(this.settingsService.settings().siteName);
 
+  mainSiteUrl = computed(() => {
+    const currentHost = window.location.host;
+    const protocol = window.location.protocol;
+    // Handles panel.yume.tv -> yume.tv and panel.localhost -> localhost
+    const mainHost = currentHost.startsWith('panel.') ? currentHost.substring(6) : 'localhost:8080';
+    return `${protocol}//${mainHost}`;
+  });
+
   updateUserRole(user: User, event: Event) {
     const selectElement = event.target as HTMLSelectElement;
     const role = selectElement.value as 'user' | 'mod' | 'admin';
     this.authService.updateUserRole(user.id, role);
+  }
+
+  openEditUserModal(user: User) {
+    this.selectedUserForEdit.set(user);
+    this.showEditUserModal.set(true);
+  }
+
+  handleSaveUser(updateData: { username: string; email: string; password?: string; profilePictureUrl?: string; }) {
+    const user = this.selectedUserForEdit();
+    if (user) {
+      const result = this.authService.adminUpdateUser(user.id, updateData);
+      if (result.success) {
+        alert(this.translationService.translate('profileUpdateSuccess'));
+        this.showEditUserModal.set(false);
+      } else {
+        alert(this.translationService.translate(result.message));
+      }
+    }
   }
 
   onFileSelected(event: Event, type: 'poster' | 'thumbnail') {
@@ -84,7 +113,6 @@ export class AdminComponent {
         } else {
           this.newMedia.thumbnailUrl = result;
         }
-        // Manually create a new object reference to help with change detection in some scenarios
         this.newMedia = { ...this.newMedia };
       };
       reader.readAsDataURL(file);

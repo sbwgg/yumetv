@@ -1,13 +1,21 @@
 <div class="flex min-h-screen">
   <!-- Sidebar -->
-  <aside class="w-64 bg-surface p-6 text-text-primary">
-    <h2 class="text-2xl font-bold mb-8 text-primary">{{ 'adminPanel' | translate }}</h2>
-    <nav class="space-y-4">
-      <button (click)="activeTab.set('dashboard')" [class]="activeTab() === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'dashboard' | translate }}</button>
-      <button (click)="activeTab.set('users')" [class]="activeTab() === 'users' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'userManagement' | translate }}</button>
-      <button (click)="activeTab.set('content')" [class]="activeTab() === 'content' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'contentManagement' | translate }}</button>
-      <button (click)="activeTab.set('settings')" [class]="activeTab() === 'settings' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'siteSettings' | translate }}</button>
-    </nav>
+  <aside class="w-64 bg-surface p-6 text-text-primary flex flex-col">
+    <div>
+      <h2 class="text-2xl font-bold mb-8 text-primary">{{ 'adminPanel' | translate }}</h2>
+      <nav class="space-y-4">
+        <button (click)="activeTab.set('dashboard')" [class]="activeTab() === 'dashboard' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'dashboard' | translate }}</button>
+        <button (click)="activeTab.set('users')" [class]="activeTab() === 'users' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'userManagement' | translate }}</button>
+        <button (click)="activeTab.set('content')" [class]="activeTab() === 'content' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'contentManagement' | translate }}</button>
+        <button (click)="activeTab.set('settings')" [class]="activeTab() === 'settings' ? 'bg-primary text-white' : 'text-text-secondary hover:bg-surface-light'" class="w-full text-left px-4 py-2 rounded-md transition-colors">{{ 'siteSettings' | translate }}</button>
+      </nav>
+    </div>
+    <div class="mt-auto">
+      <a [href]="mainSiteUrl()" class="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors px-4 py-2 rounded-md hover:bg-surface-light">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M18 10a.75.75 0 0 1-.75.75H4.66l2.1 1.95a.75.75 0 1 1-1.02 1.1l-3.5-3.25a.75.75 0 0 1 0-1.1l3.5-3.25a.75.75 0 1 1 1.02 1.1l-2.1 1.95h12.59A.75.75 0 0 1 18 10Z" clip-rule="evenodd" /></svg>
+        <span>{{ 'goToMainSite' | translate }}</span>
+      </a>
+    </div>
   </aside>
 
   <!-- Main Content -->
@@ -42,6 +50,7 @@
                   <th class="p-4">{{ 'username' | translate }}</th>
                   <th class="p-4">{{ 'email' | translate }}</th>
                   <th class="p-4">{{ 'role' | translate }}</th>
+                  <th class="p-4">{{ 'actions' | translate }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,6 +64,11 @@
                         <option value="mod">{{ 'roleMod' | translate }}</option>
                         <option value="admin">{{ 'roleAdmin' | translate }}</option>
                       </select>
+                    </td>
+                    <td class="p-4">
+                      <button (click)="openEditUserModal(user)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded transition-colors">
+                        {{ 'edit' | translate }}
+                      </button>
                     </td>
                   </tr>
                 }
@@ -300,3 +314,10 @@
     }
   </main>
 </div>
+
+@if (showEditUserModal() && selectedUserForEdit(); as user) {
+  <app-edit-user-modal 
+    [user]="user"
+    (save)="handleSaveUser($event)"
+    (close)="showEditUserModal.set(false)" />
+}
